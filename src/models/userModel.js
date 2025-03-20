@@ -5,10 +5,10 @@ const userModel = new mongoose.Schema(
     username: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
+    lastName: { type: String },
     birthdate: { type: Date },
     location: { type: String },
-    email: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
     profileImage: {
       type: String,
       default: "/uploads/default-images/profile.png",
@@ -20,10 +20,7 @@ const userModel = new mongoose.Schema(
     saved: [
       {
         item: { type: mongoose.Schema.Types.ObjectId, refPath: "itemType" },
-        itemType: {
-          type: mongoose.Schema.Types.ObjectId,
-          enum: ["Reel", "Post"],
-        },
+        itemType: { type: String, enum: ["Reel", "Post"] },
       },
     ],
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
