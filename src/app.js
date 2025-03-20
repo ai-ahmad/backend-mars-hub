@@ -14,6 +14,7 @@ const userRouter = require("./routes/userRouter");
 const authRouter = require("./routes/authRouter");
 // const storyRouter = require("./routes/storyRouter");
 
+const publicationRouter = require("./routes/publicationRouter")
 const app = express();
 
 // Connect to MongoDB
@@ -38,6 +39,7 @@ app.use("/swagger", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 // API Routes
 app.use("/api/v1/users", authMiddleware, userRouter);
 app.use("/api/v1/auth", authRouter);
+app.use("/pubclication", publicationRouter)
 // app.use("/api/v1/stories", authMiddleware, storyRouter);
 
 module.exports = app;
