@@ -120,4 +120,8 @@ const updateUser = async (req, res) => {
   }
 };
 
+const updateUserStatus = async (req, res) => {
+  
+}
+
 module.exports = { register, login, updateUser };

@@ -9,6 +9,7 @@ const userModel = new mongoose.Schema(
     birthdate: { type: Date },
     location: { type: String },
     email: { type: String, required: true, unique: true },
+    status: { type: String, enum: ["online", "offline"], required: true},
     profileImage: {
       type: String,
       default: "/uploads/default-images/profile.png",
