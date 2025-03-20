@@ -8,7 +8,7 @@ const swaggerUi = require("swagger-ui-express");
 
 const swaggerDocs = require("./config/swaggerConfig");
 const connectDB = require("./config/database");
-
+const publicationRouter = require("./routes/publicationRouter")
 const app = express();
 
 // Connect to MongoDB
@@ -20,7 +20,7 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "./uploads")));
-
+app.use("/pubclication", publicationRouter)
 
 if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev"));
