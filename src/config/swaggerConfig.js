@@ -8,15 +8,15 @@ const swaggerOptions = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "API Documentation Zaporka project",
+      title: "API Documentation Mars Hub",
       version: "1.0.0",
       description: "Documentation for the backend APIs",
     },
     basePath: "/api/v1",
     servers: [
-      // {
-      //   url: ""
-      // },
+      {
+        url: "https://backend-mars-hub.onrender.com"
+      },
       {
         url: `http://localhost:${PORT}`,
       },

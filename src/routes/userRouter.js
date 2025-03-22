@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const crudCreator = require("../services/crudCreator");
 const userModel = require("../models/userModel");
-const { updateUser } = require("../controllers/authController");
+const { updateUser, addFollowing, addSaved, updateUserStatus } = require("../controllers/authController");
 
 const userCrud = crudCreator(userModel, {
   populateFields: ["posts", "reels", "saved.item", "followers", "following"],
@@ -170,5 +170,139 @@ router.get("/", userCrud.getAll);
 router.get("/:id", userCrud.getOne);
 router.put("/", updateUser);
 router.delete("/:id", userCrud.remove);
+
+
+/**
+ * @swagger
+ * /api/v1/users/status:
+ *   put:
+ *     summary: Update user status
+ *     tags: [Users]
+ *     description: Updates the status of the authenticated user.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: New status for the user (online, offline).
+ *     responses:
+ *       200:
+ *         description: User status updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 status:
+ *                   type: string
+ *       400:
+ *         description: Status is required.
+ *       404:
+ *         description: User not found.
+ *       500:
+ *         description: Internal server error.
+ */
+
+/**
+ * @swagger
+ * /api/v1/users/follow/{followingId}:
+ *   post:
+ *     summary: Add a following user
+ *     tags: [Users]
+ *     description: Adds another user to the following list of the authenticated user.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: followingId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the user to follow.
+ *     responses:
+ *       200:
+ *         description: Following added successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 following:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       400:
+ *         description: Following ID is required.
+ *       404:
+ *         description: User not found.
+ *       500:
+ *         description: Internal server error.
+ */
+
+/**
+ * @swagger
+ * /api/v1/users/saved:
+ *   post:
+ *     summary: Add a saved item
+ *     tags: [Users]
+ *     description: Saves an item for the authenticated user.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: item
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the item to be saved.
+ *       - in: query
+ *         name: itemType
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Type of the item (e.g., post, product, etc.).
+ *     responses:
+ *       200:
+ *         description: Item added successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 saved:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       item:
+ *                         type: string
+ *                       itemType:
+ *                         type: string
+ *       400:
+ *         description: Item ID and item type are required.
+ *       404:
+ *         description: User not found.
+ *       500:
+ *         description: Internal server error.
+ */
+
+router.put("/update-status", updateUserStatus)
+router.post("/add-following/:followingId", addFollowing)
+router.post("/add-saved", addSaved)
 
 module.exports = router;

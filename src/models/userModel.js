@@ -5,9 +5,11 @@ const userModel = new mongoose.Schema(
     username: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     firstName: { type: String, required: true },
-    lastName: { type: String },
+    lastName: { type: String,  required: true },
     birthdate: { type: Date },
     location: { type: String },
+    reputation: {type: Number, default: 0},
+    grade: {type: String, enum: ["senior"]},
     email: { type: String, required: true, unique: true },
     status: { type: String, enum: ["online", "offline"], required: true},
     profileImage: {

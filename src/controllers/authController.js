@@ -7,8 +7,8 @@ const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY || "your_secret_key";
 
 const register = async (req, res) => {
   try {
-    const { username, password, firstName, email } = req.body;
-    if (!username || !password || !firstName || !email) {
+    const { username, password, firstName, lastName, email } = req.body;
+    if (!username || !password || !firstName || !lastName || !email) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -28,6 +28,7 @@ const register = async (req, res) => {
       username,
       password: hashedPassword,
       firstName,
+      lastName,
       email,
     });
 
@@ -42,12 +43,7 @@ const register = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "User registered successfully",
-      user: {
-        id: newUser._id,
-        username: newUser.username,
-        firstName: newUser.firstName,
-        email: newUser.email,
-      },
+      user: newUser,
       token,
     });
   } catch (error) {
@@ -77,12 +73,7 @@ const login = async (req, res) => {
     res.json({
       success: true,
       message: "Login successful",
-      user: {
-        id: user._id,
-        username: user.username,
-        firstName: user.firstName,
-        email: user.email,
-      },
+      user,
       token,
     });
   } catch (error) {
@@ -121,7 +112,93 @@ const updateUser = async (req, res) => {
 };
 
 const updateUserStatus = async (req, res) => {
-  
-}
+  try {
+    const userId = req.user.userId;
+    const { status } = req.query;
+    if (!status) {
+      return res.status(400).json({ message: "Status is required" });
+    }
+    const user = await userModel.findByIdAndUpdate(
+      userId,
+      { status },
+      { new: true }
+    );
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({
+      success: true,
+      message: "User status updated successfully",
+      status: user.status,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
-module.exports = { register, login, updateUser };
+const addFollowing = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { followingId } = req.params;
+    if (!followingId) {
+      return res.status(400).json({ message: "Following ID is required" });
+    }
+    const user = await userModel.findByIdAndUpdate(
+      userId,
+      { $push: { following: followingId } },
+      { new: true }
+    );
+    await userModel.findByIdAndUpdate(
+      followingId,
+      { $push: { follower: userId } },
+      { new: true }
+    );
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({
+      success: true,
+      message: "Following added successfully",
+      following: user.following,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const addSaved = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { item, itemType } = req.query;
+
+    if (!item || !itemType) {
+      return res
+        .status(400)
+        .json({ message: "Item ID and item type are required" });
+    }
+    const user = await userModel.findByIdAndUpdate(
+      userId,
+      { $push: { saved: { item, itemType } } },
+      { new: true }
+    );
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({
+      success: true,
+      message: "Added successfully",
+      saved: user.saved,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  updateUser,
+  updateUserStatus,
+  addFollowing,
+  addSaved,
+};
