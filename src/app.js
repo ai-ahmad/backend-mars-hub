@@ -28,7 +28,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "./uploads")));
 
 if (process.env.NODE_ENV !== "production") {
-  app.use(morgan("dev"));
+  app.use(morgan("dev")); 
 } else {
   app.use(morgan("combined"));
 }
@@ -38,8 +38,7 @@ app.use("/swagger", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // API Routes
 app.use("/api/v1/users", authMiddleware, userRouter);
-app.use("/api/v1/auth", authRouter);
-app.use("/pubclication", publicationRouter)
+app.use('/api/v1/publication3', publicationRouter);
 // app.use("/api/v1/stories", authMiddleware, storyRouter);
 
 module.exports = app;

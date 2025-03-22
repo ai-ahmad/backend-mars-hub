@@ -10,7 +10,7 @@ const storage = multer.diskStorage({
   destination: './uploads/',
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
-  }
+  },
 });
 
 const fileFilter = (req, file, cb) => {
@@ -25,11 +25,12 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: storage,
   limits: { fileSize: 1024 * 1024 * 10 }, // 10MB limit
-  fileFilter: fileFilter
+  fileFilter: fileFilter,
 });
+
 /**
  * @swagger
- * /publication/create:
+ * /api/v1/publication/create:
  *   post:
  *     summary: Create a new publication with file upload
  *     requestBody:
@@ -60,93 +61,110 @@ const upload = multer({
  *         description: Bad request (e.g., invalid file type, missing required fields)
  */
 router.post('/create', upload.single('file'), async (req, res) => {
-    try {
-      const content = req.file ? [{
+  try {
+    // Проверяем, что author присутствует
+    if (!req.body.author) {
+      return res.status(400).json({ error: 'Author is required' });
+    }
+
+    // Проверяем, что файл загружен
+    if (!req.file) {
+      return res.status(400).json({ error: 'File is required' });
+    }
+
+    const content = [
+      {
         url: `/uploads/${req.file.filename}`,
-        type: req.file.mimetype.startsWith('image') ? 'image' : 'video'
-      }] : [];
-  
-      const publication = new Publication({
-        author: req.body.author,
-        content,
-        description: req.body.description || ''
-      });
-  
-      await publication.save();
-      res.status(201).json(publication);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
-  });
-  
-  /**
-   * @swagger
-   * /publication/edit/{id}:
-   *   put:
-   *     summary: Edit a publication with optional file upload
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         required: true
-   *         schema:
-   *           type: string
-   *         description: The ID of the publication to edit
-   *     requestBody:
-   *       required: false
-   *       content:
-   *         multipart/form-data:
-   *           schema:
-   *             type: object
-   *             properties:
-   *               file:
-   *                 type: string
-   *                 format: binary
-   *                 description: New image (JPEG, PNG) or video (MP4) file to replace the existing content (optional)
-   *               description:
-   *                 type: string
-   *                 description: Updated description of the publication (optional)
-   *     responses:
-   *       200:
-   *         description: Publication updated successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Publication'
-   *       404:
-   *         description: Publication not found
-   *       400:
-   *         description: Bad request (e.g., invalid file type)
-   */
-  router.put('/edit/:id', upload.single('file'), async (req, res) => {
-    try {
-      const updateData = {};
-      if (req.file) {
-        updateData.content = [{
-          url: `/uploads/${req.file.filename}`,
-          type: req.file.mimetype.startsWith('image') ? 'image' : 'video'
-        }];
-      }
-      if (req.body.description) {
-        updateData.description = req.body.description;
-      }
-  
-      const publication = await Publication.findByIdAndUpdate(
-        req.params.id,
-        updateData,
-        { new: true }
-      );
-      if (!publication) return res.status(404).json({ error: 'Publication not found' });
-      res.json(publication);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
-  });
-  
-// Other endpoints (no file uploads, but included for completeness)
+        type: req.file.mimetype.startsWith('image') ? 'image' : 'video',
+      },
+    ];
+
+    const publication = new Publication({
+      author: req.body.author,
+      content,
+      description: req.body.description || '',
+    });
+
+    await publication.save();
+    res.status(201).json(publication);
+  } catch (error) {
+    console.error('Error creating publication:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
 
 /**
  * @swagger
- * /publication/delete/{id}:
+ * /api/v1/publication/edit/{id}:
+ *   put:
+ *     summary: Edit a publication with optional file upload
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the publication to edit
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: New image (JPEG, PNG) or video (MP4) file to replace the existing content (optional)
+ *               description:
+ *                 type: string
+ *                 description: Updated description of the publication (optional)
+ *     responses:
+ *       200:
+ *         description: Publication updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Publication'
+ *       404:
+ *         description: Publication not found
+ *       400:
+ *         description: Bad request (e.g., invalid file type)
+ */
+router.put('/edit/:id', upload.single('file'), async (req, res) => {
+  try {
+    const updateData = {};
+    if (req.file) {
+      updateData.content = [
+        {
+          url: `/uploads/${req.file.filename}`,
+          type: req.file.mimetype.startsWith('image') ? 'image' : 'video',
+        },
+      ];
+    }
+    if (req.body.description) {
+      updateData.description = req.body.description;
+    }
+
+    // Проверяем, что есть хотя бы одно поле для обновления
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    const publication = await Publication.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+    });
+    if (!publication) return res.status(404).json({ error: 'Publication not found' });
+    res.json(publication);
+  } catch (error) {
+    console.error('Error updating publication:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/v1/publication/delete/{id}:
  *   delete:
  *     summary: Delete a publication
  *     parameters:
@@ -177,13 +195,14 @@ router.delete('/delete/:id', async (req, res) => {
     if (!publication) return res.status(404).json({ error: 'Publication not found' });
     res.json({ message: 'Publication deleted successfully' });
   } catch (error) {
+    console.error('Error deleting publication:', error);
     res.status(400).json({ error: error.message });
   }
 });
 
 /**
  * @swagger
- * /publication/{id}:
+ * /api/v1/publication/{id}:
  *   get:
  *     summary: Get a publication by ID
  *     parameters:
@@ -211,13 +230,14 @@ router.get('/:id', async (req, res) => {
     if (!publication) return res.status(404).json({ error: 'Publication not found' });
     res.json(publication);
   } catch (error) {
+    console.error('Error fetching publication:', error);
     res.status(400).json({ error: error.message });
   }
 });
 
 /**
  * @swagger
- * /publication/{id}/comment:
+ * /api/v1/publication/{id}/comment:
  *   post:
  *     summary: Add a comment to a publication
  *     parameters:
@@ -257,24 +277,30 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/:id/comment', async (req, res) => {
   try {
+    const { userId, text } = req.body;
+    if (!userId || !text) {
+      return res.status(400).json({ error: 'userId and text are required' });
+    }
+
     const publication = await Publication.findById(req.params.id);
     if (!publication) return res.status(404).json({ error: 'Publication not found' });
-    
+
     publication.comments.push({
-      userId: req.body.userId,
-      text: req.body.text
+      userId,
+      text,
     });
-    
+
     await publication.save();
     res.json(publication);
   } catch (error) {
+    console.error('Error adding comment:', error);
     res.status(400).json({ error: error.message });
   }
 });
 
 /**
  * @swagger
- * /publication/{id}/like:
+ * /api/v1/publication/{id}/like:
  *   post:
  *     summary: Like a publication
  *     parameters:
@@ -310,23 +336,29 @@ router.post('/:id/comment', async (req, res) => {
  */
 router.post('/:id/like', async (req, res) => {
   try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
     const publication = await Publication.findById(req.params.id);
     if (!publication) return res.status(404).json({ error: 'Publication not found' });
-    
+
     publication.likes.push({
-      userId: req.body.userId
+      userId,
     });
-    
+
     await publication.save();
     res.json(publication);
   } catch (error) {
+    console.error('Error adding like:', error);
     res.status(400).json({ error: error.message });
   }
 });
 
 /**
  * @swagger
- * /publication/{id}/save:
+ * /api/v1/publication/{id}/save:
  *   post:
  *     summary: Save/View a publication
  *     parameters:
@@ -362,23 +394,29 @@ router.post('/:id/like', async (req, res) => {
  */
 router.post('/:id/save', async (req, res) => {
   try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
     const publication = await Publication.findById(req.params.id);
     if (!publication) return res.status(404).json({ error: 'Publication not found' });
-    
+
     publication.views.push({
-      userId: req.body.userId
+      userId,
     });
-    
+
     await publication.save();
     res.json(publication);
   } catch (error) {
+    console.error('Error adding view:', error);
     res.status(400).json({ error: error.message });
   }
 });
 
 /**
  * @swagger
- * /publication/{id}/shares:
+ * /api/v1/publication/{id}/shares:
  *   post:
  *     summary: Share a publication
  *     parameters:
@@ -414,16 +452,22 @@ router.post('/:id/save', async (req, res) => {
  */
 router.post('/:id/shares', async (req, res) => {
   try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
     const publication = await Publication.findById(req.params.id);
     if (!publication) return res.status(404).json({ error: 'Publication not found' });
-    
+
     publication.shares.push({
-      userId: req.body.userId
+      userId,
     });
-    
+
     await publication.save();
     res.json(publication);
   } catch (error) {
+    console.error('Error adding share:', error);
     res.status(400).json({ error: error.message });
   }
 });
