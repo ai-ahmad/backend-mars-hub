@@ -25,7 +25,7 @@ app.use(cors());
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/uploads", express.static(path.join(__dirname, "./uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "./src/uploads")));
 
 if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev")); 
@@ -37,6 +37,7 @@ if (process.env.NODE_ENV !== "production") {
 app.use("/swagger", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // API Routes
+app.use("/uploads", express.static(path.join(__dirname, "./uploads"))); 
 app.use("/api/v1/users", authMiddleware, userRouter);
 app.use('/api/v1/publication', publicationRouter);
 // app.use("/api/v1/stories", authMiddleware, storyRouter);
