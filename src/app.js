@@ -38,7 +38,7 @@ app.use("/swagger", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // API Routes
 app.use("/api/v1/users", authMiddleware, userRouter);
-app.use('/api/v1/publication3', publicationRouter);
+app.use('/api/v1/publication', publicationRouter);
 // app.use("/api/v1/stories", authMiddleware, storyRouter);
 
 module.exports = app;
