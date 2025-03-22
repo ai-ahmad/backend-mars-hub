@@ -12,7 +12,7 @@ const authMiddleware = require("./middleware/authMiddleware");
 
 const userRouter = require("./routes/userRouter");
 const authRouter = require("./routes/authRouter");
-// const storyRouter = require("./routes/storyRouter");
+const reelsRouter = require("./routes/reelsRouter");
 
 const publicationRouter = require("./routes/publicationRouter")
 const app = express();
@@ -40,6 +40,6 @@ app.use("/swagger", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.use("/api/v1/users", authMiddleware, userRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/pubclication", publicationRouter)
-// app.use("/api/v1/stories", authMiddleware, storyRouter);
+app.use("/api/v1/reels", reelsRouter);
 
 module.exports = app;

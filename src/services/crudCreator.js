@@ -1,11 +1,11 @@
 const deleteFile = require("./deleteFile");
-const imageUrlCreator = require("./imageUrlCreator");
+const mediaUrlCreator = require("./mediaUrlCreator");
 
 const crudCreator = (Model, options = {}) => {
   const {
-    useImages = false,
-    imageFields = [],
-    imageFolder = "",
+    useMedia = false,
+    mediaFields = [],
+    mediaFolder = "",
     populateFields = [],
   } = options;
 
@@ -29,29 +29,28 @@ const crudCreator = (Model, options = {}) => {
         if (!item) return res.status(404).json({ message: "Not found" });
         res.status(200).json(item);
       } catch (err) {
-        console.log(err);
         res.status(400).json({ message: err.message });
       }
     },
 
     create: async (req, res) => {
       try {
-        let images = {};
-        if (useImages) {
-          imageFields.forEach((field) => {
+        let media = {};
+        if (useMedia) {
+          mediaFields.forEach((field) => {
             if (req.files?.[field]) {
-              const imageUrls = Array.isArray(req.files[field])
+              const mediaUrls = Array.isArray(req.files[field])
                 ? req.files[field].map((file) =>
-                    imageUrlCreator(file.filename, imageFolder)
+                    mediaUrlCreator(file.filename, mediaFolder)
                   )
-                : [imageUrlCreator(req.files[field][0].filename, imageFolder)];
+                : [mediaUrlCreator(req.files[field][0].filename, mediaFolder)];
 
-              images[field] = imageUrls.length === 1 ? imageUrls[0] : imageUrls;
+              media[field] = mediaUrls.length === 1 ? mediaUrls[0] : mediaUrls;
             }
           });
         }
 
-        const newItem = await Model.create({ ...req.body, ...images });
+        const newItem = await Model.create({ ...req.body, ...media });
         res.status(201).json(newItem);
       } catch (err) {
         res.status(400).json({ message: err.message });
@@ -60,30 +59,38 @@ const crudCreator = (Model, options = {}) => {
 
     update: async (req, res) => {
       try {
-        let images = {};
-        if (useImages) {
-          imageFields.forEach((field) => {
-            if (req.files?.[field]) {
-              const imageUrls = Array.isArray(req.files[field])
-                ? req.files[field].map((file) =>
-                    imageUrlCreator(file.filename, imageFolder)
-                  )
-                : [imageUrlCreator(req.files[field][0].filename, imageFolder)];
+        const existingItem = await Model.findById(req.params.id);
+        if (!existingItem) return res.status(404).json({ message: "Not found" });
 
-              images[field] = imageUrls.length === 1 ? imageUrls[0] : imageUrls;
+        let media = {};
+        if (useMedia) {
+          mediaFields.forEach((field) => {
+            if (req.files?.[field]) {
+              if (existingItem[field]) {
+                if (Array.isArray(existingItem[field])) {
+                  existingItem[field].forEach((filePath) => deleteFile(filePath));
+                } else {
+                  deleteFile(existingItem[field]);
+                }
+              }
+
+              const mediaUrls = Array.isArray(req.files[field])
+                ? req.files[field].map((file) =>
+                    mediaUrlCreator(file.filename, mediaFolder)
+                  )
+                : [mediaUrlCreator(req.files[field][0].filename, mediaFolder)];
+
+              media[field] = mediaUrls.length === 1 ? mediaUrls[0] : mediaUrls;
             }
           });
         }
 
-        const query = Model.findByIdAndUpdate(
+        const updatedItem = await Model.findByIdAndUpdate(
           req.params.id,
-          { ...req.body, ...images },
+          { ...req.body, ...media },
           { new: true }
-        );
-        if (populateFields) query.populate(populateFields);
-        const updatedItem = await query;
+        ).populate(populateFields);
 
-        if (!updatedItem) return res.status(404).json({ message: "Not found" });
         res.status(200).json(updatedItem);
       } catch (err) {
         res.status(400).json({ message: err.message });
@@ -95,8 +102,8 @@ const crudCreator = (Model, options = {}) => {
         const item = await Model.findByIdAndDelete(req.params.id);
         if (!item) return res.status(404).json({ message: "Not found" });
 
-        if (useImages) {
-          imageFields.forEach((field) => {
+        if (useMedia) {
+          mediaFields.forEach((field) => {
             if (item[field]) {
               if (Array.isArray(item[field])) {
                 item[field].forEach((filePath) => deleteFile(filePath));

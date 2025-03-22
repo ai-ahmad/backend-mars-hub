@@ -194,6 +194,10 @@ const addSaved = async (req, res) => {
   }
 };
 
+// const updateProfilePhoto = async (req, res) => {
+
+// }
+
 module.exports = {
   register,
   login,
@@ -201,4 +205,5 @@ module.exports = {
   updateUserStatus,
   addFollowing,
   addSaved,
+  // updateProfilePhoto
 };

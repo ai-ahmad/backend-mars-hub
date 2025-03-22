@@ -52,21 +52,35 @@ const userCrud = crudCreator(userModel, {
  *         bio:
  *           type: string
  *           description: Биография пользователя
+ *         reputation:
+ *           type: number
+ *           description: Репутация пользователя
+ *           default: 0
+ *         grade:
+ *           type: string
+ *           enum: [teamleader, senior, middle, junior, intern]
+ *           description: Ранг пользователя
+ *           default: intern
+ *         status:
+ *           type: string
+ *           enum: [online, offline]
+ *           description: Статус пользователя
+ *           default: offline
  *         role:
  *           type: string
  *           enum: [user, admin]
  *           default: user
  *           description: Роль пользователя
- *         posts:
+ *         publications:
  *           type: array
  *           items:
  *             type: string
- *           description: Посты пользователя
+ *           description: Публикации пользователя
  *         reels:
  *           type: array
  *           items:
  *             type: string
- *           description: Рилы пользователя
+ *           description: Рилсы пользователя
  *         saved:
  *           type: array
  *           items:
@@ -76,8 +90,8 @@ const userCrud = crudCreator(userModel, {
  *                 type: string
  *               itemType:
  *                 type: string
- *                 enum: [Reel, Post]
- *           description: Сохраненные посты и рилы
+ *                 enum: [Reel, Publication]
+ *           description: Сохраненные посты и рилcы
  *         followers:
  *           type: array
  *           items:
@@ -99,8 +113,11 @@ const userCrud = crudCreator(userModel, {
  *         email: "john.doe@example.com"
  *         profileImage: "/uploads/default-images/profile.png"
  *         bio: "Just a regular user."
+ *         reputation: 0
+ *         grade: "intern"
+ *         status: "offline"
  *         role: "user"
- *         posts: []
+ *         publications: []
  *         reels: []
  *         saved: []
  *         followers: []
@@ -166,49 +183,6 @@ const userCrud = crudCreator(userModel, {
  *         description: Успешное удаление
  */
 
-router.get("/", userCrud.getAll);
-router.get("/:id", userCrud.getOne);
-router.put("/", updateUser);
-router.delete("/:id", userCrud.remove);
-
-
-/**
- * @swagger
- * /api/v1/users/status:
- *   put:
- *     summary: Update user status
- *     tags: [Users]
- *     description: Updates the status of the authenticated user.
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - in: query
- *         name: status
- *         required: true
- *         schema:
- *           type: string
- *         description: New status for the user (online, offline).
- *     responses:
- *       200:
- *         description: User status updated successfully.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 status:
- *                   type: string
- *       400:
- *         description: Status is required.
- *       404:
- *         description: User not found.
- *       500:
- *         description: Internal server error.
- */
 
 /**
  * @swagger
@@ -244,6 +218,44 @@ router.delete("/:id", userCrud.remove);
  *                     type: string
  *       400:
  *         description: Following ID is required.
+ *       404:
+ *         description: User not found.
+ *       500:
+ *         description: Internal server error.
+ */
+
+/**
+ * @swagger
+ * /api/v1/users/status:
+ *   put:
+ *     summary: Update user status
+ *     tags: [Users]
+ *     description: Updates the status of the authenticated user.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: New status for the user (online, offline).
+ *     responses:
+ *       200:
+ *         description: User status updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 status:
+ *                   type: string
+ *       400:
+ *         description: Status is required.
  *       404:
  *         description: User not found.
  *       500:
@@ -302,7 +314,15 @@ router.delete("/:id", userCrud.remove);
  */
 
 router.put("/update-status", updateUserStatus)
-router.post("/add-following/:followingId", addFollowing)
 router.post("/add-saved", addSaved)
+router.post("/add-following/:followingId", addFollowing)
+
+router.get("/", userCrud.getAll);
+router.get("/:id", userCrud.getOne);
+router.put("/", updateUser);
+router.delete("/:id", userCrud.remove);
+
+
+// router.put("/update-profile-photo", updateProfilePhoto)
 
 module.exports = router;
