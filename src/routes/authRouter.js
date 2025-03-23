@@ -53,6 +53,8 @@ const { login, register } = require("../controllers/authController");
  *                 type: string
  *               firstName:
  *                 type: string
+ *               lastName:
+ *                 type: string
  *     responses:
  *       201:
  *         description: User registered successfully
