@@ -137,18 +137,6 @@ const userCrud = crudCreator(userModel, {
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/User'
- *   put:
- *     summary: Обновить данные пользователя
- *     tags: [Users]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/User'
- *     responses:
- *       200:
- *         description: Данные пользователя обновлены
  *
  * /api/v1/users/{id}:
  *   get:
@@ -168,6 +156,25 @@ const userCrud = crudCreator(userModel, {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/User'
+ *   put:
+ *     summary: Обновить данные пользователя
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID пользователя
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/User'
+ *     responses:
+ *       200:
+ *         description: Данные пользователя обновлены
  *
  *   delete:
  *     summary: Удалить пользователя по ID
@@ -187,7 +194,7 @@ const userCrud = crudCreator(userModel, {
 
 /**
  * @swagger
- * /api/v1/users/follow/{followingId}:
+ * /api/v1/users/{id}/follow/{followingId}:
  *   post:
  *     summary: Add a following user
  *     tags: [Users]
@@ -196,11 +203,17 @@ const userCrud = crudCreator(userModel, {
  *       - BearerAuth: []
  *     parameters:
  *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the user (follower).
+ *       - in: path
  *         name: followingId
  *         required: true
  *         schema:
  *           type: string
- *         description: ID of the user to follow.
+ *         description: ID of the user (following).
  *     responses:
  *       200:
  *         description: Following added successfully.
@@ -227,7 +240,7 @@ const userCrud = crudCreator(userModel, {
 
 /**
  * @swagger
- * /api/v1/users/status:
+ * /api/v1/users/{id}/status:
  *   put:
  *     summary: Update user status
  *     tags: [Users]
@@ -240,7 +253,13 @@ const userCrud = crudCreator(userModel, {
  *         required: true
  *         schema:
  *           type: string
- *         description: New status for the user (online, offline).
+ *           enum: [online, offline]
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Id of the user.
  *     responses:
  *       200:
  *         description: User status updated successfully.
@@ -265,7 +284,7 @@ const userCrud = crudCreator(userModel, {
 
 /**
  * @swagger
- * /api/v1/users/saved:
+ * /api/v1/users/{id}/saved:
  *   post:
  *     summary: Add a saved item
  *     tags: [Users]
@@ -285,6 +304,12 @@ const userCrud = crudCreator(userModel, {
  *         schema:
  *           type: string
  *         description: Type of the item (e.g., post, product, etc.).
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the user.
  *     responses:
  *       200:
  *         description: Item added successfully.
@@ -314,13 +339,13 @@ const userCrud = crudCreator(userModel, {
  *         description: Internal server error.
  */
 
-router.put("/status", authMiddleware, updateUserStatus)
-router.post("/saved", authMiddleware, addSaved)
-router.post("/follow/:followingId", authMiddleware, addFollowing)
+router.put("/:id/status", authMiddleware, updateUserStatus)
+router.post("/:id/saved", authMiddleware, addSaved)
+router.post("/:id/follow/:followingId", authMiddleware, addFollowing)
 
 router.get("/", userCrud.getAll);
 router.get("/:id", userCrud.getOne);
-router.put("/", authMiddleware, updateUser);
+router.put("/:id", authMiddleware, updateUser);
 router.delete("/:id", authMiddleware, userCrud.remove);
 
 

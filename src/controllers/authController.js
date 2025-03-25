@@ -95,7 +95,7 @@ const login = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const { id } = req.params;
     const updates = req.body;
 
     if (updates.password) {
@@ -103,7 +103,7 @@ const updateUser = async (req, res) => {
     }
 
     const user = await userModel
-      .findByIdAndUpdate(userId, updates, {
+      .findByIdAndUpdate(id, updates, {
         new: true,
         runValidators: true,
       })
@@ -126,13 +126,13 @@ const updateUser = async (req, res) => {
 
 const updateUserStatus = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const { id } = req.params;
     const { status } = req.query;
     if (!status) {
       return res.status(400).json({ message: "Status is required" });
     }
     const user = await userModel.findByIdAndUpdate(
-      userId,
+      id,
       { status },
       { new: true }
     );
@@ -142,6 +142,8 @@ const updateUserStatus = async (req, res) => {
     const populatedUser = await userModel
       .findById(user._id)
       .populate(populateFields);
+
+    req.io.emit("send-following", populatedUser.following || []);
 
     res.json({
       success: true,
@@ -155,19 +157,18 @@ const updateUserStatus = async (req, res) => {
 
 const addFollowing = async (req, res) => {
   try {
-    const userId = req.user.userId;
-    const { followingId } = req.params;
+    const { followingId, id } = req.params;
     if (!followingId) {
       return res.status(400).json({ message: "Following ID is required" });
     }
     const user = await userModel.findByIdAndUpdate(
-      userId,
+      id,
       { $push: { following: followingId } },
       { new: true }
     );
     await userModel.findByIdAndUpdate(
       followingId,
-      { $push: { follower: userId } },
+      { $push: { follower: id } },
       { new: true }
     );
     if (!user) {
@@ -176,6 +177,8 @@ const addFollowing = async (req, res) => {
     const populatedUser = await userModel
       .findById(user._id)
       .populate(populateFields);
+
+    req.io.emit("send-following", populatedUser.following || []);
 
     res.json({
       success: true,
@@ -189,7 +192,7 @@ const addFollowing = async (req, res) => {
 
 const addSaved = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const { id } = req.params;
     const { item, itemType } = req.query;
 
     if (!item || !itemType) {
@@ -198,7 +201,7 @@ const addSaved = async (req, res) => {
         .json({ message: "Item ID and item type are required" });
     }
     const user = await userModel.findByIdAndUpdate(
-      userId,
+      id,
       { $push: { saved: { item, itemType } } },
       { new: true }
     );

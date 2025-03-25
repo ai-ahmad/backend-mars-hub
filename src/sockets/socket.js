@@ -19,7 +19,7 @@ const socketHandler = (io) => {
           return socket.emit("error", { message: "User not found" });
         }
 
-        socket.emit("users", user.following || []);
+        socket.emit("send-following", user.following || []);
       } catch (error) {
         console.error("❌ Error fetching followings:", error);
         socket.emit("error", { message: "Failed to fetch followings" });
