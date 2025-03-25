@@ -10,7 +10,10 @@ const socketHandler = (io) => {
       }
 
       try {
-        const user = await userModel.findById(userId).select("following");
+        const user = await userModel
+          .findById(userId)
+          .select("following")
+          .populate("following");
 
         if (!user) {
           return socket.emit("error", { message: "User not found" });
