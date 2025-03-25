@@ -143,7 +143,29 @@ const updateUserStatus = async (req, res) => {
       .findById(user._id)
       .populate(populateFields);
 
-    req.io.emit("send-following", populatedUser.following || []);
+    console.log(populatedUser);
+
+    req.on("get-following", async (userId) => {
+      if (!userId) {
+        return socket.emit("error", { message: "User ID is required" });
+      }
+
+      try {
+        const user = await userModel
+          .findById(userId)
+          .select("following")
+          .populate("following");
+
+        if (!user) {
+          return socket.emit("error", { message: "User not found" });
+        }
+
+        socket.emit("send-following", user.following || []);
+      } catch (error) {
+        console.error("❌ Error fetching followings:", error);
+        socket.emit("error", { message: "Failed to fetch followings" });
+      }
+    });
 
     res.json({
       success: true,
@@ -178,7 +200,27 @@ const addFollowing = async (req, res) => {
       .findById(user._id)
       .populate(populateFields);
 
-    req.io.emit("send-following", populatedUser.following || []);
+    req.on("get-following", async (userId) => {
+      if (!userId) {
+        return socket.emit("error", { message: "User ID is required" });
+      }
+
+      try {
+        const user = await userModel
+          .findById(userId)
+          .select("following")
+          .populate("following");
+
+        if (!user) {
+          return socket.emit("error", { message: "User not found" });
+        }
+
+        socket.emit("send-following", user.following || []);
+      } catch (error) {
+        console.error("❌ Error fetching followings:", error);
+        socket.emit("error", { message: "Failed to fetch followings" });
+      }
+    });
 
     res.json({
       success: true,
