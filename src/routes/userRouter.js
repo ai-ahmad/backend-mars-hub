@@ -2,6 +2,7 @@ const router = require("express").Router();
 const crudCreator = require("../services/crudCreator");
 const userModel = require("../models/userModel");
 const { updateUser, addFollowing, addSaved, updateUserStatus } = require("../controllers/authController");
+const authMiddleware = require("../middleware/authMiddleware");
 
 const userCrud = crudCreator(userModel, {
   populateFields: ["posts", "reels", "saved.item", "followers", "following"],
@@ -313,14 +314,14 @@ const userCrud = crudCreator(userModel, {
  *         description: Internal server error.
  */
 
-router.put("/update-status", updateUserStatus)
-router.post("/add-saved", addSaved)
-router.post("/add-following/:followingId", addFollowing)
+router.put("/update-status", authMiddleware, updateUserStatus)
+router.post("/add-saved", authMiddleware, addSaved)
+router.post("/add-following/:followingId", authMiddleware, addFollowing)
 
 router.get("/", userCrud.getAll);
 router.get("/:id", userCrud.getOne);
-router.put("/", updateUser);
-router.delete("/:id", userCrud.remove);
+router.put("/", authMiddleware, updateUser);
+router.delete("/:id", authMiddleware, userCrud.remove);
 
 
 // router.put("/update-profile-photo", updateProfilePhoto)

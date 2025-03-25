@@ -8,7 +8,6 @@ const swaggerUi = require("swagger-ui-express");
 
 const swaggerDocs = require("./config/swaggerConfig");
 const connectDB = require("./config/database");
-const authMiddleware = require("./middleware/authMiddleware");
 
 const userRouter = require("./routes/userRouter");
 const authRouter = require("./routes/authRouter");
@@ -37,8 +36,7 @@ if (process.env.NODE_ENV !== "production") {
 app.use("/swagger", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // API Routes
-app.use("/uploads", express.static(path.join(__dirname, "./uploads"))); 
-app.use("/api/v1/users", authMiddleware, userRouter);
+app.use("/api/v1/users", userRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/reels", reelsRouter);
 app.use('/api/v1/publication', publicationRouter);
