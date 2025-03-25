@@ -10,7 +10,7 @@ const swaggerOptions = {
     info: {
       title: "API Documentation Mars Hub",
       version: "1.0.0",
-      description: "Documentation for the backend APIs",
+      description: "Documentation for the backend API",
     },
     basePath: "/api/v1",
     servers: [
