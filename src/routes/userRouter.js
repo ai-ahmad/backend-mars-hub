@@ -314,9 +314,9 @@ const userCrud = crudCreator(userModel, {
  *         description: Internal server error.
  */
 
-router.put("/update-status", authMiddleware, updateUserStatus)
-router.post("/add-saved", authMiddleware, addSaved)
-router.post("/add-following/:followingId", authMiddleware, addFollowing)
+router.put("/status", authMiddleware, updateUserStatus)
+router.post("/saved", authMiddleware, addSaved)
+router.post("/follow/:followingId", authMiddleware, addFollowing)
 
 router.get("/", userCrud.getAll);
 router.get("/:id", userCrud.getOne);
