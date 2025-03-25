@@ -128,44 +128,35 @@ const updateUserStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.query;
+
     if (!status) {
       return res.status(400).json({ message: "Status is required" });
     }
+
     const user = await userModel.findByIdAndUpdate(
       id,
       { status },
       { new: true }
     );
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
     const populatedUser = await userModel
       .findById(user._id)
       .populate(populateFields);
 
-    console.log(populatedUser);
 
-    req.on("get-following", async (userId) => {
-      if (!userId) {
-        return socket.emit("error", { message: "User ID is required" });
-      }
-
-      try {
-        const user = await userModel
-          .findById(userId)
-          .select("following")
-          .populate("following");
-
-        if (!user) {
-          return socket.emit("error", { message: "User not found" });
-        }
-
-        socket.emit("send-following", user.following || []);
-      } catch (error) {
-        console.error("❌ Error fetching followings:", error);
-        socket.emit("error", { message: "Failed to fetch followings" });
-      }
-    });
+    if (req.io) {
+      req.io.to(`user-${id}`).emit("user-status-updated", {
+        userId: id,
+        status,
+        updatedUser: populatedUser,
+      });
+    } else {
+      console.warn("⚠️ WebSocket io не доступен для отправки уведомления!");
+    }
 
     res.json({
       success: true,
@@ -173,6 +164,7 @@ const updateUserStatus = async (req, res) => {
       user: populatedUser,
     });
   } catch (error) {
+    console.error("❌ Error updating user status:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -199,28 +191,6 @@ const addFollowing = async (req, res) => {
     const populatedUser = await userModel
       .findById(user._id)
       .populate(populateFields);
-
-    req.on("get-following", async (userId) => {
-      if (!userId) {
-        return socket.emit("error", { message: "User ID is required" });
-      }
-
-      try {
-        const user = await userModel
-          .findById(userId)
-          .select("following")
-          .populate("following");
-
-        if (!user) {
-          return socket.emit("error", { message: "User not found" });
-        }
-
-        socket.emit("send-following", user.following || []);
-      } catch (error) {
-        console.error("❌ Error fetching followings:", error);
-        socket.emit("error", { message: "Failed to fetch followings" });
-      }
-    });
 
     res.json({
       success: true,
