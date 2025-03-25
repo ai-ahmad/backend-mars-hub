@@ -5,6 +5,14 @@ const userModel = require("../models/userModel");
 
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY || "your_secret_key";
 
+const populateFields = [
+  "publications",
+  "reels",
+  "saved.item",
+  "followers",
+  "following",
+];
+
 const register = async (req, res) => {
   try {
     const { username, password, firstName, lastName, email } = req.body;
@@ -34,6 +42,10 @@ const register = async (req, res) => {
 
     await newUser.save();
 
+    const populatedUser = await userModel
+      .findById(newUser._id)
+      .populate(populateFields);
+
     const token = jwt.sign(
       { userId: newUser._id, role: newUser.role },
       JWT_SECRET_KEY,
@@ -43,7 +55,7 @@ const register = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "User registered successfully",
-      user: newUser,
+      user: populatedUser,
       token,
     });
   } catch (error) {
@@ -54,7 +66,7 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { username, password } = req.body;
-    const user = await userModel.findOne({ username });
+    const user = await userModel.findOne({ username }).populate(populateFields);
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
@@ -95,7 +107,8 @@ const updateUser = async (req, res) => {
         new: true,
         runValidators: true,
       })
-      .select("-password");
+      .select("-password")
+      .populate(populateFields);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -126,10 +139,14 @@ const updateUserStatus = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+    const populatedUser = await userModel
+      .findById(user._id)
+      .populate(populateFields);
+
     res.json({
       success: true,
       message: "User status updated successfully",
-      status: user.status,
+      user: populatedUser,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -156,10 +173,14 @@ const addFollowing = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+    const populatedUser = await userModel
+      .findById(user._id)
+      .populate(populateFields);
+
     res.json({
       success: true,
       message: "Following added successfully",
-      following: user.following,
+      user: populatedUser,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -184,10 +205,14 @@ const addSaved = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+    const populatedUser = await userModel
+      .findById(user._id)
+      .populate(populateFields);
+
     res.json({
       success: true,
       message: "Added successfully",
-      saved: user.saved,
+      user: populatedUser,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
