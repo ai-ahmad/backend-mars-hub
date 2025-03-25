@@ -13,21 +13,21 @@ const userRouter = require("./routes/userRouter");
 const authRouter = require("./routes/authRouter");
 const reelsRouter = require("./routes/reelsRouter");
 
-const publicationRouter = require("./routes/publicationRouter")
+const publicationRouter = require("./routes/publicationRouter");
 const app = express();
 
 // Connect to MongoDB
 connectDB();
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: "*" }));
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "./uploads")));
 
 if (process.env.NODE_ENV !== "production") {
-  app.use(morgan("dev")); 
+  app.use(morgan("dev"));
 } else {
   app.use(morgan("combined"));
 }
@@ -47,6 +47,6 @@ app.use((req, res, next) => {
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/reels", reelsRouter);
-app.use('/api/v1/publication', publicationRouter);
+app.use("/api/v1/publication", publicationRouter);
 
 module.exports = app;
