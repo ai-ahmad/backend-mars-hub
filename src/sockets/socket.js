@@ -4,10 +4,19 @@ const socketHandler = (io) => {
   io.on("connection", (socket) => {
     console.log(`🔌 New client connected: ${socket.id}`);
 
-    socket.on("get-following", async () => {
+    socket.on("get-following", async (userId) => {
+      if (!userId) {
+        return socket.emit("error", { message: "User ID is required" });
+      }
+
       try {
-        const followings = await userModel.find().select("following");
-        socket.emit("users", followings);
+        const user = await userModel.findById(userId).select("following");
+
+        if (!user) {
+          return socket.emit("error", { message: "User not found" });
+        }
+
+        socket.emit("users", user.following || []);
       } catch (error) {
         console.error("❌ Error fetching followings:", error);
         socket.emit("error", { message: "Failed to fetch followings" });
