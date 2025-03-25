@@ -13,10 +13,7 @@ const io = new Server(server, {
   },
 });
 
-app.use((req, res, next) => {
-  req.io = io;
-  next();
-});
+app.set("io", io);
 
 // Подключаем сокеты
 socketHandler(io);

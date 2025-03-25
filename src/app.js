@@ -35,6 +35,14 @@ if (process.env.NODE_ENV !== "production") {
 // SWAGGER
 app.use("/swagger", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
+app.use((req, res, next) => {
+  req.io = app.get("io");
+  if (!req.io) {
+    console.warn("⚠️ WebSocket io не доступен в запросе!");
+  }
+  next();
+});
+
 // API Routes
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/auth", authRouter);
