@@ -5,7 +5,7 @@ const { updateUser, addFollowing, addSaved, updateUserStatus } = require("../con
 const authMiddleware = require("../middleware/authMiddleware");
 
 const userCrud = crudCreator(userModel, {
-  populateFields: ["posts", "reels", "saved.item", "followers", "following"],
+  populateFields: ["publications", "reels", "saved.item", "followers", "following"],
 });
 
 
