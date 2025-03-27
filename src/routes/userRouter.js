@@ -3,6 +3,7 @@ const crudCreator = require("../services/crudCreator");
 const userModel = require("../models/userModel");
 const { updateUser, addFollowing, addSaved, updateUserStatus } = require("../controllers/authController");
 const authMiddleware = require("../middleware/authMiddleware");
+const { searchUsers } = require("../controllers/searchController");
 
 const userCrud = crudCreator(userModel, {
   populateFields: ["publications", "reels", "saved.item", "followers", "following"],
@@ -339,6 +340,39 @@ const userCrud = crudCreator(userModel, {
  *         description: Internal server error.
  */
 
+/**
+ * @swagger
+ * /api/v1/users/search:
+ *   get:
+ *     summary: Search for users by username
+ *     description: Returns a list of users whose usernames match the search query (case-insensitive).
+ *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: query
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The search string to filter usernames.
+ *     responses:
+ *       200:
+ *         description: List of matching users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Query in params is required.
+ *       404:
+ *         description: User not found.
+ *       500:
+ *         description: Internal server error.
+ */
+router.get("/search", searchUsers);
 router.put("/:id/status", authMiddleware, updateUserStatus)
 router.post("/:id/saved", authMiddleware, addSaved)
 router.post("/:id/follow/:followingId", authMiddleware, addFollowing)
