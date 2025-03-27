@@ -7,7 +7,7 @@ const path = require('path');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
-  destination: './src/uploads/',
+  destination: './src/uploads/', // Указываем путь src/uploads
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
   },
@@ -62,10 +62,12 @@ const upload = multer({
  */
 router.post('/create', upload.single('file'), async (req, res) => {
   try {
+    // Проверяем, что author присутствует
     if (!req.body.author) {
       return res.status(400).json({ error: 'Author is required' });
     }
 
+    // Проверяем, что файл загружен
     if (!req.file) {
       return res.status(400).json({ error: 'File is required' });
     }
@@ -144,6 +146,7 @@ router.put('/edit/:id', upload.single('file'), async (req, res) => {
       updateData.description = req.body.description;
     }
 
+    // Проверяем, что есть хотя бы одно поле для обновления
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
     }
@@ -193,89 +196,6 @@ router.delete('/delete/:id', async (req, res) => {
     res.json({ message: 'Publication deleted successfully' });
   } catch (error) {
     console.error('Error deleting publication:', error);
-    res.status(400).json({ error: error.message });
-  }
-});
-
-/**
- * @swagger
- * /api/v1/publication:
- *   get:
- *     summary: Get all publications with pagination and sorting
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *         description: Page number for pagination
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Number of publications per page
- *       - in: query
- *         name: sort
- *         schema:
- *           type: string
- *           default: '-createdAt'
- *         description: Sort order (e.g., 'createdAt' for ascending, '-createdAt' for descending)
- *     responses:
- *       200:
- *         description: List of publications
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 publications:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Publication'
- *                 total:
- *                   type: integer
- *                   description: Total number of publications
- *                 page:
- *                   type: integer
- *                   description: Current page number
- *                 pages:
- *                   type: integer
- *                   description: Total number of pages
- *       400:
- *         description: Bad request
- */
-router.get('/', async (req, res) => {
-  try {
-    // Extract query parameters
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const sort = req.query.sort || '-createdAt'; // Default sort by createdAt descending
-
-    // Calculate skip for pagination
-    const skip = (page - 1) * limit;
-
-    // Fetch publications with pagination and sorting
-    const publications = await Publication.find()
-      .sort(sort)
-      .skip(skip)
-      .limit(limit);
-
-    // Get total number of publications
-    const total = await Publication.countDocuments();
-
-    // Calculate total pages
-    const pages = Math.ceil(total / limit);
-
-    // Return response
-    res.json({
-      publications,
-      total,
-      page,
-      pages,
-    });
-  } catch (error) {
-    console.error('Error fetching publications:', error);
     res.status(400).json({ error: error.message });
   }
 });
