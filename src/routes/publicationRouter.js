@@ -1,4 +1,3 @@
-// routes/publication.js
 const express = require('express');
 const router = express.Router();
 const Publication = require('../models/publicationsModel');
@@ -382,7 +381,7 @@ router.post('/:id/comment', async (req, res) => {
  * @swagger
  * /api/v1/publication/{id}/like:
  *   post:
- *     summary: Like a publication
+ *     summary: Like a publication (one like per user)
  *     parameters:
  *       - in: path
  *         name: id
@@ -404,15 +403,15 @@ router.post('/:id/comment', async (req, res) => {
  *               - userId
  *     responses:
  *       200:
- *         description: Like added successfully
+ *         description: Like added or already exists
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Publication'
+ *       400:
+ *         description: Bad request (e.g., userId missing)
  *       404:
  *         description: Publication not found
- *       400:
- *         description: Bad request
  */
 router.post('/:id/like', async (req, res) => {
   try {
@@ -424,6 +423,13 @@ router.post('/:id/like', async (req, res) => {
     const publication = await Publication.findById(req.params.id);
     if (!publication) return res.status(404).json({ error: 'Publication not found' });
 
+    // Перевіряємо, чи користувач уже поставив лайк
+    const hasLiked = publication.likes.some(like => like.userId.toString() === userId);
+    if (hasLiked) {
+      return res.status(200).json(publication); // Повертаємо публікацію без змін, якщо лайк уже є
+    }
+
+    // Якщо лайка ще немає, додаємо його
     publication.likes.push({
       userId,
     });
