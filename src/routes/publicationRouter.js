@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Publication = require('../models/publicationsModel');
 const multer = require('multer');
 const path = require('path');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
-  destination: './src/uploads/',
+  destination: './src/uploads/', // Залишаємо як є, але переконайтеся, що папка існує
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
   },
@@ -246,27 +247,20 @@ router.delete('/delete/:id', async (req, res) => {
  */
 router.get('/', async (req, res) => {
   try {
-    // Extract query parameters
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const sort = req.query.sort || '-createdAt'; // Default sort by createdAt descending
+    const sort = req.query.sort || '-createdAt';
 
-    // Calculate skip for pagination
     const skip = (page - 1) * limit;
 
-    // Fetch publications with pagination and sorting
     const publications = await Publication.find()
       .sort(sort)
       .skip(skip)
       .limit(limit);
 
-    // Get total number of publications
     const total = await Publication.countDocuments();
-
-    // Calculate total pages
     const pages = Math.ceil(total / limit);
 
-    // Return response
     res.json({
       publications,
       total,
@@ -409,27 +403,31 @@ router.post('/:id/comment', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Publication'
  *       400:
- *         description: Bad request (e.g., userId missing)
+ *         description: Bad request (e.g., userId missing or invalid publication ID)
  *       404:
  *         description: Publication not found
  */
 router.post('/:id/like', async (req, res) => {
   try {
     const { userId } = req.body;
+    const { id } = req.params;
+
     if (!userId) {
       return res.status(400).json({ error: 'userId is required' });
     }
 
-    const publication = await Publication.findById(req.params.id);
-    if (!publication) return res.status(404).json({ error: 'Publication not found' });
-
-    // Перевіряємо, чи користувач уже поставив лайк
-    const hasLiked = publication.likes.some(like => like.userId.toString() === userId);
-    if (hasLiked) {
-      return res.status(200).json(publication); // Повертаємо публікацію без змін, якщо лайк уже є
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid publication ID' });
     }
 
-    // Якщо лайка ще немає, додаємо його
+    const publication = await Publication.findById(id);
+    if (!publication) return res.status(404).json({ error: 'Publication not found' });
+
+    const hasLiked = publication.likes.some(like => like.userId.toString() === userId);
+    if (hasLiked) {
+      return res.status(200).json(publication);
+    }
+
     publication.likes.push({
       userId,
     });
