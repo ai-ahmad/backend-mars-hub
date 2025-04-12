@@ -4,16 +4,16 @@ const mongoose = require('mongoose');
 const Publication = require('../models/publicationsModel');
 const multer = require('multer');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid'); // Import uuid for unique IDs
+const { v4: uuidv4 } = require('uuid');
 const authMiddleware = require('../middleware/authMiddleware');
 
-// Configure multer for file uploads
+// Configure multer for single file uploads
 const storage = multer.diskStorage({
   destination: './src/uploads/',
   filename: (req, file, cb) => {
-    const uniqueId = uuidv4(); // Generate unique ID
-    const ext = path.extname(file.originalname); // Get file extension (e.g., .jpg, .mp4)
-    cb(null, `${uniqueId}${ext}`); // Filename like abc123-def456.jpg
+    const uniqueId = uuidv4();
+    const ext = path.extname(file.originalname);
+    cb(null, `${uniqueId}${ext}`);
   },
 });
 
@@ -30,13 +30,102 @@ const upload = multer({
   storage: storage,
   limits: { fileSize: 1024 * 1024 * 10 }, // 10MB limit per file
   fileFilter: fileFilter,
-}).array('files', 5); // Allow up to 5 files
+}).single('file'); // Single file upload
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Publication:
+ *       type: object
+ *       required:
+ *         - author
+ *         - content
+ *       properties:
+ *         _id:
+ *           type: string
+ *           format: ObjectId
+ *           description: Unique identifier for the publication
+ *         author:
+ *           type: string
+ *           format: ObjectId
+ *           description: ID of the user who created the publication
+ *         content:
+ *           type: object
+ *           properties:
+ *             url:
+ *               type: string
+ *               description: URL to the uploaded media file
+ *             type:
+ *               type: string
+ *               enum: [image, video]
+ *               description: Type of media (image or video)
+ *           description: Media object (image or video)
+ *         description:
+ *           type: string
+ *           description: Optional description of the publication
+ *         likes:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: ObjectId
+ *                 description: ID of the user who liked
+ *           description: List of likes
+ *         comments:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: ObjectId
+ *                 description: ID of the user who commented
+ *               text:
+ *                 type: string
+ *                 description: Comment text
+ *               createdAt:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Date the comment was created
+ *           description: List of comments
+ *         views:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: ObjectId
+ *                 description: ID of the user who viewed
+ *           description: List of views
+ *         shares:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: ObjectId
+ *                 description: ID of the user who shared
+ *           description: List of shares
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date the publication was created
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date the publication was last updated
+ */
 
 /**
  * @swagger
  * /api/v1/publication/create:
  *   post:
- *     summary: Create a new publication with multiple file uploads
+ *     summary: Create a new publication with a single file upload
  *     tags: [Publications]
  *     security:
  *       - BearerAuth: []
@@ -47,12 +136,10 @@ const upload = multer({
  *           schema:
  *             type: object
  *             properties:
- *               files:
- *                 type: array
- *                 items:
- *                   type: string
- *                   format: binary
- *                 description: Array of image (JPEG, PNG) or video (MP4) files to upload (up to 5)
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: Image (JPEG, PNG) or video (MP4) file to upload
  *               author:
  *                 type: string
  *                 description: The ID of the user creating the publication
@@ -61,7 +148,7 @@ const upload = multer({
  *                 description: A description of the publication (optional)
  *             required:
  *               - author
- *               - files
+ *               - file
  *     responses:
  *       201:
  *         description: Publication created successfully
@@ -80,14 +167,14 @@ router.post('/create', [authMiddleware, upload], async (req, res) => {
       return res.status(400).json({ error: 'Author is required' });
     }
 
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'At least one file is required' });
+    if (!req.file) {
+      return res.status(400).json({ error: 'File is required' });
     }
 
-    const content = req.files.map(file => ({
-      url: `/uploads/${file.filename}`,
-      type: file.mimetype.startsWith('image') ? 'image' : 'video',
-    }));
+    const content = {
+      url: `/uploads/${req.file.filename}`,
+      type: req.file.mimetype.startsWith('image') ? 'image' : 'video',
+    };
 
     const publication = new Publication({
       author: req.body.author,
@@ -107,7 +194,7 @@ router.post('/create', [authMiddleware, upload], async (req, res) => {
  * @swagger
  * /api/v1/publication/edit/{id}:
  *   put:
- *     summary: Edit a publication with optional multiple file uploads
+ *     summary: Edit a publication with an optional single file upload
  *     tags: [Publications]
  *     security:
  *       - BearerAuth: []
@@ -125,12 +212,10 @@ router.post('/create', [authMiddleware, upload], async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               files:
- *                 type: array
- *                 items:
- *                   type: string
- *                   format: binary
- *                 description: New image (JPEG, PNG) or video (MP4) files to replace existing content (optional, up to 5)
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: New image (JPEG, PNG) or video (MP4) file to replace existing content (optional)
  *               description:
  *                 type: string
  *                 description: Updated description of the publication (optional)
@@ -151,11 +236,11 @@ router.post('/create', [authMiddleware, upload], async (req, res) => {
 router.put('/edit/:id', [authMiddleware, upload], async (req, res) => {
   try {
     const updateData = {};
-    if (req.files && req.files.length > 0) {
-      updateData.content = req.files.map(file => ({
-        url: `/uploads/${file.filename}`,
-        type: file.mimetype.startsWith('image') ? 'image' : 'video',
-      }));
+    if (req.file) {
+      updateData.content = {
+        url: `/uploads/${req.file.filename}`,
+        type: req.file.mimetype.startsWith('image') ? 'image' : 'video',
+      };
     }
     if (req.body.description) {
       updateData.description = req.body.description;
