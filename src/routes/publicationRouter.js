@@ -4,12 +4,16 @@ const mongoose = require('mongoose');
 const Publication = require('../models/publicationsModel');
 const multer = require('multer');
 const path = require('path');
+const { v4: uuidv4 } = require('uuid'); // Import uuid for unique IDs
+const authMiddleware = require('../middleware/authMiddleware');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
-  destination: './src/uploads/', // Залишаємо як є, але переконайтеся, що папка існує
+  destination: './src/uploads/',
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    const uniqueId = uuidv4(); // Generate unique ID
+    const ext = path.extname(file.originalname); // Get file extension (e.g., .jpg, .mp4)
+    cb(null, `${uniqueId}${ext}`); // Filename like abc123-def456.jpg
   },
 });
 
@@ -24,15 +28,18 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 1024 * 1024 * 10 }, // 10MB limit
+  limits: { fileSize: 1024 * 1024 * 10 }, // 10MB limit per file
   fileFilter: fileFilter,
-});
+}).array('files', 5); // Allow up to 5 files
 
 /**
  * @swagger
  * /api/v1/publication/create:
  *   post:
- *     summary: Create a new publication with file upload
+ *     summary: Create a new publication with multiple file uploads
+ *     tags: [Publications]
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -40,16 +47,21 @@ const upload = multer({
  *           schema:
  *             type: object
  *             properties:
- *               file:
- *                 type: string
- *                 format: binary
- *                 description: The image (JPEG, PNG) or video (MP4) file to upload
+ *               files:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: Array of image (JPEG, PNG) or video (MP4) files to upload (up to 5)
  *               author:
  *                 type: string
  *                 description: The ID of the user creating the publication
  *               description:
  *                 type: string
  *                 description: A description of the publication (optional)
+ *             required:
+ *               - author
+ *               - files
  *     responses:
  *       201:
  *         description: Publication created successfully
@@ -59,23 +71,23 @@ const upload = multer({
  *               $ref: '#/components/schemas/Publication'
  *       400:
  *         description: Bad request (e.g., invalid file type, missing required fields)
+ *       401:
+ *         description: Unauthorized
  */
-router.post('/create', upload.single('file'), async (req, res) => {
+router.post('/create', [authMiddleware, upload], async (req, res) => {
   try {
     if (!req.body.author) {
       return res.status(400).json({ error: 'Author is required' });
     }
 
-    if (!req.file) {
-      return res.status(400).json({ error: 'File is required' });
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'At least one file is required' });
     }
 
-    const content = [
-      {
-        url: `/uploads/${req.file.filename}`,
-        type: req.file.mimetype.startsWith('image') ? 'image' : 'video',
-      },
-    ];
+    const content = req.files.map(file => ({
+      url: `/uploads/${file.filename}`,
+      type: file.mimetype.startsWith('image') ? 'image' : 'video',
+    }));
 
     const publication = new Publication({
       author: req.body.author,
@@ -95,7 +107,10 @@ router.post('/create', upload.single('file'), async (req, res) => {
  * @swagger
  * /api/v1/publication/edit/{id}:
  *   put:
- *     summary: Edit a publication with optional file upload
+ *     summary: Edit a publication with optional multiple file uploads
+ *     tags: [Publications]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -110,10 +125,12 @@ router.post('/create', upload.single('file'), async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               file:
- *                 type: string
- *                 format: binary
- *                 description: New image (JPEG, PNG) or video (MP4) file to replace the existing content (optional)
+ *               files:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: New image (JPEG, PNG) or video (MP4) files to replace existing content (optional, up to 5)
  *               description:
  *                 type: string
  *                 description: Updated description of the publication (optional)
@@ -124,21 +141,21 @@ router.post('/create', upload.single('file'), async (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Publication'
+ *       400:
+ *         description: Bad request (e.g., invalid file type, no fields to update)
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: Publication not found
- *       400:
- *         description: Bad request (e.g., invalid file type)
  */
-router.put('/edit/:id', upload.single('file'), async (req, res) => {
+router.put('/edit/:id', [authMiddleware, upload], async (req, res) => {
   try {
     const updateData = {};
-    if (req.file) {
-      updateData.content = [
-        {
-          url: `/uploads/${req.file.filename}`,
-          type: req.file.mimetype.startsWith('image') ? 'image' : 'video',
-        },
-      ];
+    if (req.files && req.files.length > 0) {
+      updateData.content = req.files.map(file => ({
+        url: `/uploads/${file.filename}`,
+        type: file.mimetype.startsWith('image') ? 'image' : 'video',
+      }));
     }
     if (req.body.description) {
       updateData.description = req.body.description;
@@ -164,6 +181,7 @@ router.put('/edit/:id', upload.single('file'), async (req, res) => {
  * /api/v1/publication/delete/{id}:
  *   delete:
  *     summary: Delete a publication
+ *     tags: [Publications]
  *     parameters:
  *       - in: path
  *         name: id
@@ -202,6 +220,7 @@ router.delete('/delete/:id', async (req, res) => {
  * /api/v1/publication:
  *   get:
  *     summary: Get all publications with pagination and sorting
+ *     tags: [Publications]
  *     parameters:
  *       - in: query
  *         name: page
@@ -278,6 +297,7 @@ router.get('/', async (req, res) => {
  * /api/v1/publication/{id}:
  *   get:
  *     summary: Get a publication by ID
+ *     tags: [Publications]
  *     parameters:
  *       - in: path
  *         name: id
@@ -313,6 +333,7 @@ router.get('/:id', async (req, res) => {
  * /api/v1/publication/{id}/comment:
  *   post:
  *     summary: Add a comment to a publication
+ *     tags: [Publications]
  *     parameters:
  *       - in: path
  *         name: id
@@ -376,6 +397,7 @@ router.post('/:id/comment', async (req, res) => {
  * /api/v1/publication/{id}/like:
  *   post:
  *     summary: Like a publication (one like per user)
+ *     tags: [Publications]
  *     parameters:
  *       - in: path
  *         name: id
@@ -445,6 +467,7 @@ router.post('/:id/like', async (req, res) => {
  * /api/v1/publication/{id}/save:
  *   post:
  *     summary: Save/View a publication
+ *     tags: [Publications]
  *     parameters:
  *       - in: path
  *         name: id
@@ -503,6 +526,7 @@ router.post('/:id/save', async (req, res) => {
  * /api/v1/publication/{id}/shares:
  *   post:
  *     summary: Share a publication
+ *     tags: [Publications]
  *     parameters:
  *       - in: path
  *         name: id
