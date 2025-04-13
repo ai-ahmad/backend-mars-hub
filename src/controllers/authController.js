@@ -44,7 +44,7 @@ const register = async (req, res) => {
 
     const populatedUser = await userModel
       .findById(newUser._id)
-      .populate(populateFields);
+      .select("-password");
 
     const token = jwt.sign(
       { userId: newUser._id, role: newUser.role },
@@ -66,7 +66,7 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { username, password } = req.body;
-    const user = await userModel.findOne({ username }).populate(populateFields);
+    const user = await userModel.findOne({ username }).select("-password");
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
@@ -146,7 +146,6 @@ const updateUserStatus = async (req, res) => {
     const populatedUser = await userModel
       .findById(user._id)
       .populate(populateFields);
-
 
     if (req.io) {
       req.io.to(`user-${id}`).emit("user-status-updated", {

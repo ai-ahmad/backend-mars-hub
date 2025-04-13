@@ -153,6 +153,10 @@ router.get("/:id", reelsController.getOne);
  *                 items:
  *                   type: string
  *                 description: Хэштеги для рила
+ *               isPublic:
+ *                 type: boolean
+ *                 default: true
+ *                 description: Тип приватности рилса
  *     responses:
  *       201:
  *         description: Рил успешно создан
@@ -199,6 +203,9 @@ router.post("/", [authMiddleware, upload], reelsController.create);
  *                 items:
  *                   type: string
  *                 description: Хэштеги для рила
+ *               isPublic:
+ *                 type: boolean
+ *                 description: Тип приватности рилса
  *     responses:
  *       200:
  *         description: Рил успешно обновлен

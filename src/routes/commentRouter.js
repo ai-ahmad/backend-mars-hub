@@ -148,7 +148,7 @@ const commentController = crudCreator(commentModel, {
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: commentId
+ *         name: id
  *         required: true
  *         schema:
  *           type: string

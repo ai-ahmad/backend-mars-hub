@@ -2,16 +2,16 @@ const commentModel = require("../models/commentModel");
 
 const addOrRemoveLike = async (req, res) => {
   try {
-    const { commentId } = req.params;
+    const { id } = req.params;
     const userId = req.user.userId;
 
-    const comment = await commentModel.findById(commentId);
+    const comment = await commentModel.findById(id);
     if (!comment) return res.status(404).json({ message: "comment not found" });
 
     const isLiked = comment.likes.includes(userId);
 
     const updatedComment = await commentModel.findByIdAndUpdate(
-      commentId,
+      id,
       isLiked ? { $pull: { likes: userId } } : { $push: { likes: userId } },
       { new: true }
     );
