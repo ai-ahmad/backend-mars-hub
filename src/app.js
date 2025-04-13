@@ -12,6 +12,7 @@ const connectDB = require("./config/database");
 const userRouter = require("./routes/userRouter");
 const authRouter = require("./routes/authRouter");
 const reelsRouter = require("./routes/reelsRouter");
+const commentRouter = require("./routes/commentRouter");
 
 const publicationRouter = require("./routes/publicationRouter");
 const app = express();
@@ -48,5 +49,6 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/reels", reelsRouter);
 app.use("/api/v1/publication", publicationRouter);
+app.use("/api/v1/comments", commentRouter);
 
 module.exports = app;
