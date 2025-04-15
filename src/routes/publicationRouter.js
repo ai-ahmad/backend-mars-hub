@@ -1,15 +1,14 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const mongoose = require('mongoose');
-const Publication = require('../models/publicationsModel');
-const multer = require('multer');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-const authMiddleware = require('../middleware/authMiddleware');
+const Publication = require("../models/Publication");
+const multer = require("multer");
+const path = require("path");
+const { v4: uuidv4 } = require("uuid");
+const authMiddleware = require("../middleware/auth");
 
 // Configure multer for single file uploads
 const storage = multer.diskStorage({
-  destination: './src/uploads/',
+  destination: "./src/uploads/",
   filename: (req, file, cb) => {
     const uniqueId = uuidv4();
     const ext = path.extname(file.originalname);
@@ -18,19 +17,19 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ['image/jpeg', 'image/png', 'video/mp4'];
+  const allowedTypes = ["image/jpeg", "image/png", "video/mp4"];
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Only images (JPEG, PNG) and MP4 videos are allowed'));
+    cb(new Error("Only images (JPEG, PNG) and MP4 videos are allowed"));
   }
 };
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 1024 * 1024 * 10 }, // 10MB limit per file
+  limits: { fileSize: 1024 * 1024 * 10 }, // 10MB limit
   fileFilter: fileFilter,
-}).single('file'); // Single file upload
+}).single("file");
 
 /**
  * @swagger
@@ -44,23 +43,30 @@ const upload = multer({
  *       properties:
  *         _id:
  *           type: string
- *           format: ObjectId
  *           description: Unique identifier for the publication
  *         author:
- *           type: string
- *           format: ObjectId
- *           description: ID of the user who created the publication
- *         content:
  *           type: object
  *           properties:
- *             url:
+ *             _id:
  *               type: string
- *               description: URL to the uploaded media file
- *             type:
+ *             name:
  *               type: string
- *               enum: [image, video]
- *               description: Type of media (image or video)
- *           description: Media object (image or video)
+ *             email:
+ *               type: string
+ *           description: User who created the publication
+ *         content:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               url:
+ *                 type: string
+ *                 description: URL to the uploaded media file
+ *               type:
+ *                 type: string
+ *                 enum: [image, video]
+ *                 description: Type of media
+ *           description: Media content (image or video)
  *         description:
  *           type: string
  *           description: Optional description of the publication
@@ -70,9 +76,17 @@ const upload = multer({
  *             type: object
  *             properties:
  *               userId:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *               date:
  *                 type: string
- *                 format: ObjectId
- *                 description: ID of the user who liked
+ *                 format: date-time
  *           description: List of likes
  *         comments:
  *           type: array
@@ -80,16 +94,19 @@ const upload = multer({
  *             type: object
  *             properties:
  *               userId:
- *                 type: string
- *                 format: ObjectId
- *                 description: ID of the user who commented
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   email:
+ *                     type: string
  *               text:
  *                 type: string
- *                 description: Comment text
- *               createdAt:
+ *               date:
  *                 type: string
  *                 format: date-time
- *                 description: Date the comment was created
  *           description: List of comments
  *         views:
  *           type: array
@@ -97,9 +114,17 @@ const upload = multer({
  *             type: object
  *             properties:
  *               userId:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *               date:
  *                 type: string
- *                 format: ObjectId
- *                 description: ID of the user who viewed
+ *                 format: date-time
  *           description: List of views
  *         shares:
  *           type: array
@@ -107,28 +132,32 @@ const upload = multer({
  *             type: object
  *             properties:
  *               userId:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *               date:
  *                 type: string
- *                 format: ObjectId
- *                 description: ID of the user who shared
+ *                 format: date-time
  *           description: List of shares
  *         createdAt:
  *           type: string
  *           format: date-time
  *           description: Date the publication was created
- *         updatedAt:
- *           type: string
- *           format: date-time
- *           description: Date the publication was last updated
  */
 
 /**
  * @swagger
- * /api/v1/publication/create:
+ * /api/v1/publications/create:
  *   post:
  *     summary: Create a new publication with a single file upload
  *     tags: [Publications]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -139,15 +168,11 @@ const upload = multer({
  *               file:
  *                 type: string
  *                 format: binary
- *                 description: Image (JPEG, PNG) or video (MP4) file to upload
- *               author:
- *                 type: string
- *                 description: The ID of the user creating the publication
+ *                 description: Image (JPEG, PNG) or video (MP4) file
  *               description:
  *                 type: string
- *                 description: A description of the publication (optional)
+ *                 description: Optional description
  *             required:
- *               - author
  *               - file
  *     responses:
  *       201:
@@ -155,56 +180,63 @@ const upload = multer({
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Publication'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Publication'
  *       400:
- *         description: Bad request (e.g., invalid file type, missing required fields)
+ *         description: Bad request
  *       401:
  *         description: Unauthorized
  */
-router.post('/create', [authMiddleware, upload], async (req, res) => {
+router.post("/create", [authMiddleware, upload], async (req, res) => {
   try {
-    if (!req.body.author) {
-      return res.status(400).json({ error: 'Author is required' });
-    }
-
     if (!req.file) {
-      return res.status(400).json({ error: 'File is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "File is required" });
     }
 
     const content = {
       url: `/uploads/${req.file.filename}`,
-      type: req.file.mimetype.startsWith('image') ? 'image' : 'video',
+      type: req.file.mimetype.startsWith("image") ? "image" : "video",
     };
 
     const publication = new Publication({
-      author: req.body.author,
-      content,
-      description: req.body.description || '',
+      author: req.user._id, // Используем ID из токена
+      content: [content],
+      description: req.body.description || "",
     });
 
     await publication.save();
-    res.status(201).json(publication);
+    const populatedPublication = await Publication.findById(publication._id)
+      .populate("author", "name email")
+      .populate("likes.userId comments.userId views.userId shares.userId", "name email");
+
+    res.status(201).json({ success: true, data: populatedPublication });
   } catch (error) {
-    console.error('Error creating publication:', error);
-    res.status(400).json({ error: error.message });
+    console.error("Error creating publication:", error);
+    res.status(400).json({ success: false, message: error.message });
   }
 });
 
 /**
  * @swagger
- * /api/v1/publication/edit/{id}:
+ * /api/v1/publications/edit/{id}:
  *   put:
- *     summary: Edit a publication with an optional single file upload
+ *     summary: Edit a publication
  *     tags: [Publications]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: The ID of the publication to edit
+ *         description: Publication ID
  *     requestBody:
  *       required: false
  *       content:
@@ -215,65 +247,91 @@ router.post('/create', [authMiddleware, upload], async (req, res) => {
  *               file:
  *                 type: string
  *                 format: binary
- *                 description: New image (JPEG, PNG) or video (MP4) file to replace existing content (optional)
+ *                 description: New image or video file (optional)
  *               description:
  *                 type: string
- *                 description: Updated description of the publication (optional)
+ *                 description: Updated description (optional)
  *     responses:
  *       200:
  *         description: Publication updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Publication'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Publication'
  *       400:
- *         description: Bad request (e.g., invalid file type, no fields to update)
+ *         description: Bad request
  *       401:
  *         description: Unauthorized
+ *       403:
+ *         description: Not authorized to edit
  *       404:
  *         description: Publication not found
  */
-router.put('/edit/:id', [authMiddleware, upload], async (req, res) => {
+router.put("/edit/:id", [authMiddleware, upload], async (req, res) => {
   try {
     const updateData = {};
     if (req.file) {
-      updateData.content = {
+      updateData.content = [{
         url: `/uploads/${req.file.filename}`,
-        type: req.file.mimetype.startsWith('image') ? 'image' : 'video',
-      };
+        type: req.file.mimetype.startsWith("image") ? "image" : "video",
+      }];
     }
     if (req.body.description) {
       updateData.description = req.body.description;
     }
 
     if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
+      return res
+        .status(400)
+        .json({ success: false, message: "No fields to update" });
     }
 
-    const publication = await Publication.findByIdAndUpdate(req.params.id, updateData, {
-      new: true,
-    });
-    if (!publication) return res.status(404).json({ error: 'Publication not found' });
-    res.json(publication);
+    const publication = await Publication.findById(req.params.id);
+    if (!publication) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Publication not found" });
+    }
+
+    if (!publication.author.equals(req.user._id)) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to edit" });
+    }
+
+    const updatedPublication = await Publication.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateData },
+      { new: true }
+    ).populate("author likes.userId comments.userId views.userId shares.userId", "name email");
+
+    res.status(200).json({ success: true, data: updatedPublication });
   } catch (error) {
-    console.error('Error updating publication:', error);
-    res.status(400).json({ error: error.message });
+    console.error("Error updating publication:", error);
+    res.status(400).json({ success: false, message: error.message });
   }
 });
 
 /**
  * @swagger
- * /api/v1/publication/delete/{id}:
+ * /api/v1/publications/delete/{id}:
  *   delete:
  *     summary: Delete a publication
  *     tags: [Publications]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: The ID of the publication to delete
+ *         description: Publication ID
  *     responses:
  *       200:
  *         description: Publication deleted successfully
@@ -282,27 +340,46 @@ router.put('/edit/:id', [authMiddleware, upload], async (req, res) => {
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
  *                 message:
  *                   type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Not authorized to delete
  *       404:
  *         description: Publication not found
- *       400:
- *         description: Bad request
  */
-router.delete('/delete/:id', async (req, res) => {
+router.delete("/delete/:id", authMiddleware, async (req, res) => {
   try {
-    const publication = await Publication.findByIdAndDelete(req.params.id);
-    if (!publication) return res.status(404).json({ error: 'Publication not found' });
-    res.json({ message: 'Publication deleted successfully' });
+    const publication = await Publication.findById(req.params.id);
+    if (!publication) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Publication not found" });
+    }
+
+    if (!publication.author.equals(req.user._id)) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to delete" });
+    }
+
+    await Publication.findByIdAndDelete(req.params.id);
+    res.status(200).json({
+      success: true,
+      message: "Publication deleted successfully",
+    });
   } catch (error) {
-    console.error('Error deleting publication:', error);
-    res.status(400).json({ error: error.message });
+    console.error("Error deleting publication:", error);
+    res.status(400).json({ success: false, message: error.message });
   }
 });
 
 /**
  * @swagger
- * /api/v1/publication:
+ * /api/v1/publications:
  *   get:
  *     summary: Get all publications with pagination and sorting
  *     tags: [Publications]
@@ -312,7 +389,7 @@ router.delete('/delete/:id', async (req, res) => {
  *         schema:
  *           type: integer
  *           default: 1
- *         description: Page number for pagination
+ *         description: Page number
  *       - in: query
  *         name: limit
  *         schema:
@@ -324,7 +401,7 @@ router.delete('/delete/:id', async (req, res) => {
  *         schema:
  *           type: string
  *           default: '-createdAt'
- *         description: Sort order (e.g., 'createdAt' for ascending, '-createdAt' for descending)
+ *         description: Sort order (e.g., '-createdAt' for newest first)
  *     responses:
  *       200:
  *         description: List of publications
@@ -333,53 +410,57 @@ router.delete('/delete/:id', async (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 publications:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Publication'
- *                 total:
- *                   type: integer
- *                   description: Total number of publications
- *                 page:
- *                   type: integer
- *                   description: Current page number
- *                 pages:
- *                   type: integer
- *                   description: Total number of pages
- *       400:
- *         description: Bad request
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     publications:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Publication'
+ *                     total:
+ *                       type: integer
+ *                     page:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
  */
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const sort = req.query.sort || '-createdAt';
+    const sort = req.query.sort || "-createdAt";
 
     const skip = (page - 1) * limit;
 
     const publications = await Publication.find()
       .sort(sort)
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .populate("author likes.userId comments.userId views.userId shares.userId", "name email");
 
     const total = await Publication.countDocuments();
     const pages = Math.ceil(total / limit);
 
-    res.json({
-      publications,
-      total,
-      page,
-      pages,
+    res.status(200).json({
+      success: true,
+      data: {
+        publications,
+        total,
+        page,
+        pages,
+      },
     });
   } catch (error) {
-    console.error('Error fetching publications:', error);
-    res.status(400).json({ error: error.message });
+    console.error("Error fetching publications:", error);
+    res.status(400).json({ success: false, message: error.message });
   }
 });
 
 /**
  * @swagger
- * /api/v1/publication/{id}:
+ * /api/v1/publications/{id}:
  *   get:
  *     summary: Get a publication by ID
  *     tags: [Publications]
@@ -389,43 +470,55 @@ router.get('/', async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *         description: The ID of the publication to retrieve
+ *         description: Publication ID
  *     responses:
  *       200:
  *         description: Publication found
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Publication'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Publication'
  *       404:
  *         description: Publication not found
- *       400:
- *         description: Bad request
  */
-router.get('/:id', async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
-    const publication = await Publication.findById(req.params.id);
-    if (!publication) return res.status(404).json({ error: 'Publication not found' });
-    res.json(publication);
+    const publication = await Publication.findById(req.params.id).populate(
+      "author likes.userId comments.userId views.userId shares.userId",
+      "name email"
+    );
+    if (!publication) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Publication not found" });
+    }
+    res.status(200).json({ success: true, data: publication });
   } catch (error) {
-    console.error('Error fetching publication:', error);
-    res.status(400).json({ error: error.message });
+    console.error("Error fetching publication:", error);
+    res.status(400).json({ success: false, message: error.message });
   }
 });
 
 /**
  * @swagger
- * /api/v1/publication/{id}/comment:
+ * /api/v1/publications/{id}/comment:
  *   post:
  *     summary: Add a comment to a publication
  *     tags: [Publications]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: The ID of the publication to comment on
+ *         description: Publication ID
  *     requestBody:
  *       required: true
  *       content:
@@ -433,14 +526,10 @@ router.get('/:id', async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               userId:
- *                 type: string
- *                 description: The ID of the user adding the comment
  *               text:
  *                 type: string
- *                 description: The comment text
+ *                 description: Comment text
  *             required:
- *               - userId
  *               - text
  *     responses:
  *       200:
@@ -448,220 +537,237 @@ router.get('/:id', async (req, res) => {
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Publication'
- *       404:
- *         description: Publication not found
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Publication'
  *       400:
  *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Publication not found
  */
-router.post('/:id/comment', async (req, res) => {
+router.post("/:id/comment", authMiddleware, async (req, res) => {
   try {
-    const { userId, text } = req.body;
-    if (!userId || !text) {
-      return res.status(400).json({ error: 'userId and text are required' });
+    const { text } = req.body;
+    if (!text) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Text is required" });
     }
 
     const publication = await Publication.findById(req.params.id);
-    if (!publication) return res.status(404).json({ error: 'Publication not found' });
+    if (!publication) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Publication not found" });
+    }
 
     publication.comments.push({
-      userId,
+      userId: req.user._id,
       text,
     });
 
     await publication.save();
-    res.json(publication);
+    const populatedPublication = await Publication.findById(publication._id).populate(
+      "author likes.userId comments.userId views.userId shares.userId",
+      "name email"
+    );
+
+    res.status(200).json({ success: true, data: populatedPublication });
   } catch (error) {
-    console.error('Error adding comment:', error);
-    res.status(400).json({ error: error.message });
+    console.error("Error adding comment:", error);
+    res.status(400).json({ success: false, message: error.message });
   }
 });
 
 /**
  * @swagger
- * /api/v1/publication/{id}/like:
+ * /api/v1/publications/{id}/like:
  *   post:
- *     summary: Like a publication (one like per user)
+ *     summary: Like a publication
  *     tags: [Publications]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: The ID of the publication to like
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               userId:
- *                 type: string
- *                 description: The ID of the user liking the publication
- *             required:
- *               - userId
+ *         description: Publication ID
  *     responses:
  *       200:
  *         description: Like added or already exists
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Publication'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Publication'
  *       400:
- *         description: Bad request (e.g., userId missing or invalid publication ID)
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: Publication not found
  */
-router.post('/:id/like', async (req, res) => {
+router.post("/:id/like", authMiddleware, async (req, res) => {
   try {
-    const { userId } = req.body;
-    const { id } = req.params;
-
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
+    const publication = await Publication.findById(req.params.id);
+    if (!publication) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Publication not found" });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ error: 'Invalid publication ID' });
-    }
-
-    const publication = await Publication.findById(id);
-    if (!publication) return res.status(404).json({ error: 'Publication not found' });
-
-    const hasLiked = publication.likes.some(like => like.userId.toString() === userId);
+    const hasLiked = publication.likes.some((like) =>
+      like.userId.equals(req.user._id)
+    );
     if (hasLiked) {
-      return res.status(200).json(publication);
+      return res.status(200).json({ success: true, data: publication });
     }
 
     publication.likes.push({
-      userId,
+      userId: req.user._id,
     });
 
     await publication.save();
-    res.json(publication);
+    const populatedPublication = await Publication.findById(publication._id).populate(
+      "author likes.userId comments.userId views.userId shares.userId",
+      "name email"
+    );
+
+    res.status(200).json({ success: true, data: populatedPublication });
   } catch (error) {
-    console.error('Error adding like:', error);
-    res.status(400).json({ error: error.message });
+    console.error("Error adding like:", error);
+    res.status(400).json({ success: false, message: error.message });
   }
 });
 
 /**
  * @swagger
- * /api/v1/publication/{id}/save:
+ * /api/v1/publications/{id}/view:
  *   post:
- *     summary: Save/View a publication
+ *     summary: Record a view for a publication
  *     tags: [Publications]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: The ID of the publication to view
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               userId:
- *                 type: string
- *                 description: The ID of the user viewing the publication
- *             required:
- *               - userId
+ *         description: Publication ID
  *     responses:
  *       200:
  *         description: View recorded successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Publication'
- *       404:
- *         description: Publication not found
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Publication'
  *       400:
  *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Publication not found
  */
-router.post('/:id/save', async (req, res) => {
+router.post("/:id/view", authMiddleware, async (req, res) => {
   try {
-    const { userId } = req.body;
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
+    const publication = await Publication.findById(req.params.id);
+    if (!publication) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Publication not found" });
     }
 
-    const publication = await Publication.findById(req.params.id);
-    if (!publication) return res.status(404).json({ error: 'Publication not found' });
-
     publication.views.push({
-      userId,
+      userId: req.user._id,
     });
 
     await publication.save();
-    res.json(publication);
+    const populatedPublication = await Publication.findById(publication._id).populate(
+      "author likes.userId comments.userId views.userId shares.userId",
+      "name email"
+    );
+
+    res.status(200).json({ success: true, data: populatedPublication });
   } catch (error) {
-    console.error('Error adding view:', error);
-    res.status(400).json({ error: error.message });
+    console.error("Error adding view:", error);
+    res.status(400).json({ success: false, message: error.message });
   }
 });
 
 /**
  * @swagger
- * /api/v1/publication/{id}/shares:
+ * /api/v1/publications/{id}/share:
  *   post:
  *     summary: Share a publication
  *     tags: [Publications]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: The ID of the publication to share
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               userId:
- *                 type: string
- *                 description: The ID of the user sharing the publication
- *             required:
- *               - userId
+ *         description: Publication ID
  *     responses:
  *       200:
  *         description: Share recorded successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Publication'
- *       404:
- *         description: Publication not found
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Publication'
  *       400:
  *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Publication not found
  */
-router.post('/:id/shares', async (req, res) => {
+router.post("/:id/share", authMiddleware, async (req, res) => {
   try {
-    const { userId } = req.body;
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
+    const publication = await Publication.findById(req.params.id);
+    if (!publication) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Publication not found" });
     }
 
-    const publication = await Publication.findById(req.params.id);
-    if (!publication) return res.status(404).json({ error: 'Publication not found' });
-
     publication.shares.push({
-      userId,
+      userId: req.user._id,
     });
 
     await publication.save();
-    res.json(publication);
+    const populatedPublication = await Publication.findById(publication._id).populate(
+      "author likes.userId comments.userId views.userId shares.userId",
+      "name email"
+    );
+
+    res.status(200).json({ success: true, data: populatedPublication });
   } catch (error) {
-    console.error('Error adding share:', error);
-    res.status(400).json({ error: error.message });
+    console.error("Error adding share:", error);
+    res.status(400).json({ success: false, message: error.message });
   }
 });
 
