@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const Publication = require("../models/Publication");
+const Publication = require("../models/publicationsModel");
 const multer = require("multer");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
-const authMiddleware = require("../middleware/auth");
+const authMiddleware = require("../middleware/authMiddleware");
 
 // Configure multer for single file uploads
 const storage = multer.diskStorage({
