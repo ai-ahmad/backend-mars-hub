@@ -14,7 +14,7 @@ const commentModel = new mongoose.Schema(
     text: { type: String, required: true },
     likes: [{ type: mongoose.Schema.ObjectId, ref: "User" }],
   },
-  {
+  { 
     timestamps: true,
   }
 );
