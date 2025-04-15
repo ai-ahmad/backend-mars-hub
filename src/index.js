@@ -21,7 +21,7 @@ socketHandler(io);
 server.listen(PORT, () => {
   console.log(`Server: ${DOMAIN}`);
   console.log(`Server Swagger: ${DOMAIN}/swagger`);
-  console.log(`================================================================`)
+  console.log(`================================================================`);
   console.log(`Local: http://localhost:${PORT}`);
   console.log(`Local Swagger: http://localhost:${PORT}/swagger`);
 });

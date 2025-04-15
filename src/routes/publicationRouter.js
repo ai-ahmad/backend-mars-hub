@@ -1,15 +1,19 @@
-// routes/publication.js
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Publication = require('../models/publicationsModel');
 const multer = require('multer');
 const path = require('path');
+const { v4: uuidv4 } = require('uuid');
+const authMiddleware = require('../middleware/authMiddleware');
 
-// Configure multer for file uploads
+// Configure multer for single file uploads
 const storage = multer.diskStorage({
-  destination: './src/uploads/', // Указываем путь src/uploads
+  destination: './src/uploads/',
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    const uniqueId = uuidv4();
+    const ext = path.extname(file.originalname);
+    cb(null, `${uniqueId}${ext}`);
   },
 });
 
@@ -24,15 +28,107 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 1024 * 1024 * 10 }, // 10MB limit
+  limits: { fileSize: 1024 * 1024 * 10 }, // 10MB limit per file
   fileFilter: fileFilter,
-});
+}).single('file'); // Single file upload
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Publication:
+ *       type: object
+ *       required:
+ *         - author
+ *         - content
+ *       properties:
+ *         _id:
+ *           type: string
+ *           format: ObjectId
+ *           description: Unique identifier for the publication
+ *         author:
+ *           type: string
+ *           format: ObjectId
+ *           description: ID of the user who created the publication
+ *         content:
+ *           type: object
+ *           properties:
+ *             url:
+ *               type: string
+ *               description: URL to the uploaded media file
+ *             type:
+ *               type: string
+ *               enum: [image, video]
+ *               description: Type of media (image or video)
+ *           description: Media object (image or video)
+ *         description:
+ *           type: string
+ *           description: Optional description of the publication
+ *         likes:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: ObjectId
+ *                 description: ID of the user who liked
+ *           description: List of likes
+ *         comments:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: ObjectId
+ *                 description: ID of the user who commented
+ *               text:
+ *                 type: string
+ *                 description: Comment text
+ *               createdAt:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Date the comment was created
+ *           description: List of comments
+ *         views:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: ObjectId
+ *                 description: ID of the user who viewed
+ *           description: List of views
+ *         shares:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: ObjectId
+ *                 description: ID of the user who shared
+ *           description: List of shares
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date the publication was created
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date the publication was last updated
+ */
 
 /**
  * @swagger
  * /api/v1/publication/create:
  *   post:
- *     summary: Create a new publication with file upload
+ *     summary: Create a new publication with a single file upload
+ *     tags: [Publications]
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -43,13 +139,16 @@ const upload = multer({
  *               file:
  *                 type: string
  *                 format: binary
- *                 description: The image (JPEG, PNG) or video (MP4) file to upload
+ *                 description: Image (JPEG, PNG) or video (MP4) file to upload
  *               author:
  *                 type: string
  *                 description: The ID of the user creating the publication
  *               description:
  *                 type: string
  *                 description: A description of the publication (optional)
+ *             required:
+ *               - author
+ *               - file
  *     responses:
  *       201:
  *         description: Publication created successfully
@@ -59,25 +158,23 @@ const upload = multer({
  *               $ref: '#/components/schemas/Publication'
  *       400:
  *         description: Bad request (e.g., invalid file type, missing required fields)
+ *       401:
+ *         description: Unauthorized
  */
-router.post('/create', upload.single('file'), async (req, res) => {
+router.post('/create', [authMiddleware, upload], async (req, res) => {
   try {
-    // Проверяем, что author присутствует
     if (!req.body.author) {
       return res.status(400).json({ error: 'Author is required' });
     }
 
-    // Проверяем, что файл загружен
     if (!req.file) {
       return res.status(400).json({ error: 'File is required' });
     }
 
-    const content = [
-      {
-        url: `/uploads/${req.file.filename}`,
-        type: req.file.mimetype.startsWith('image') ? 'image' : 'video',
-      },
-    ];
+    const content = {
+      url: `/uploads/${req.file.filename}`,
+      type: req.file.mimetype.startsWith('image') ? 'image' : 'video',
+    };
 
     const publication = new Publication({
       author: req.body.author,
@@ -97,7 +194,10 @@ router.post('/create', upload.single('file'), async (req, res) => {
  * @swagger
  * /api/v1/publication/edit/{id}:
  *   put:
- *     summary: Edit a publication with optional file upload
+ *     summary: Edit a publication with an optional single file upload
+ *     tags: [Publications]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -115,7 +215,7 @@ router.post('/create', upload.single('file'), async (req, res) => {
  *               file:
  *                 type: string
  *                 format: binary
- *                 description: New image (JPEG, PNG) or video (MP4) file to replace the existing content (optional)
+ *                 description: New image (JPEG, PNG) or video (MP4) file to replace existing content (optional)
  *               description:
  *                 type: string
  *                 description: Updated description of the publication (optional)
@@ -126,27 +226,26 @@ router.post('/create', upload.single('file'), async (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Publication'
+ *       400:
+ *         description: Bad request (e.g., invalid file type, no fields to update)
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: Publication not found
- *       400:
- *         description: Bad request (e.g., invalid file type)
  */
-router.put('/edit/:id', upload.single('file'), async (req, res) => {
+router.put('/edit/:id', [authMiddleware, upload], async (req, res) => {
   try {
     const updateData = {};
     if (req.file) {
-      updateData.content = [
-        {
-          url: `/uploads/${req.file.filename}`,
-          type: req.file.mimetype.startsWith('image') ? 'image' : 'video',
-        },
-      ];
+      updateData.content = {
+        url: `/uploads/${req.file.filename}`,
+        type: req.file.mimetype.startsWith('image') ? 'image' : 'video',
+      };
     }
     if (req.body.description) {
       updateData.description = req.body.description;
     }
 
-    // Проверяем, что есть хотя бы одно поле для обновления
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
     }
@@ -167,6 +266,7 @@ router.put('/edit/:id', upload.single('file'), async (req, res) => {
  * /api/v1/publication/delete/{id}:
  *   delete:
  *     summary: Delete a publication
+ *     tags: [Publications]
  *     parameters:
  *       - in: path
  *         name: id
@@ -202,9 +302,87 @@ router.delete('/delete/:id', async (req, res) => {
 
 /**
  * @swagger
+ * /api/v1/publication:
+ *   get:
+ *     summary: Get all publications with pagination and sorting
+ *     tags: [Publications]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of publications per page
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           default: '-createdAt'
+ *         description: Sort order (e.g., 'createdAt' for ascending, '-createdAt' for descending)
+ *     responses:
+ *       200:
+ *         description: List of publications
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 publications:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Publication'
+ *                 total:
+ *                   type: integer
+ *                   description: Total number of publications
+ *                 page:
+ *                   type: integer
+ *                   description: Current page number
+ *                 pages:
+ *                   type: integer
+ *                   description: Total number of pages
+ *       400:
+ *         description: Bad request
+ */
+router.get('/', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const sort = req.query.sort || '-createdAt';
+
+    const skip = (page - 1) * limit;
+
+    const publications = await Publication.find()
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Publication.countDocuments();
+    const pages = Math.ceil(total / limit);
+
+    res.json({
+      publications,
+      total,
+      page,
+      pages,
+    });
+  } catch (error) {
+    console.error('Error fetching publications:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * @swagger
  * /api/v1/publication/{id}:
  *   get:
  *     summary: Get a publication by ID
+ *     tags: [Publications]
  *     parameters:
  *       - in: path
  *         name: id
@@ -240,6 +418,7 @@ router.get('/:id', async (req, res) => {
  * /api/v1/publication/{id}/comment:
  *   post:
  *     summary: Add a comment to a publication
+ *     tags: [Publications]
  *     parameters:
  *       - in: path
  *         name: id
@@ -302,7 +481,8 @@ router.post('/:id/comment', async (req, res) => {
  * @swagger
  * /api/v1/publication/{id}/like:
  *   post:
- *     summary: Like a publication
+ *     summary: Like a publication (one like per user)
+ *     tags: [Publications]
  *     parameters:
  *       - in: path
  *         name: id
@@ -324,25 +504,36 @@ router.post('/:id/comment', async (req, res) => {
  *               - userId
  *     responses:
  *       200:
- *         description: Like added successfully
+ *         description: Like added or already exists
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Publication'
+ *       400:
+ *         description: Bad request (e.g., userId missing or invalid publication ID)
  *       404:
  *         description: Publication not found
- *       400:
- *         description: Bad request
  */
 router.post('/:id/like', async (req, res) => {
   try {
     const { userId } = req.body;
+    const { id } = req.params;
+
     if (!userId) {
       return res.status(400).json({ error: 'userId is required' });
     }
 
-    const publication = await Publication.findById(req.params.id);
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid publication ID' });
+    }
+
+    const publication = await Publication.findById(id);
     if (!publication) return res.status(404).json({ error: 'Publication not found' });
+
+    const hasLiked = publication.likes.some(like => like.userId.toString() === userId);
+    if (hasLiked) {
+      return res.status(200).json(publication);
+    }
 
     publication.likes.push({
       userId,
@@ -361,6 +552,7 @@ router.post('/:id/like', async (req, res) => {
  * /api/v1/publication/{id}/save:
  *   post:
  *     summary: Save/View a publication
+ *     tags: [Publications]
  *     parameters:
  *       - in: path
  *         name: id
@@ -419,6 +611,7 @@ router.post('/:id/save', async (req, res) => {
  * /api/v1/publication/{id}/shares:
  *   post:
  *     summary: Share a publication
+ *     tags: [Publications]
  *     parameters:
  *       - in: path
  *         name: id

@@ -15,6 +15,8 @@ const reelsRouter = require("./routes/reelsRouter");
 const commentRouter = require("./routes/commentRouter");
 
 const publicationRouter = require("./routes/publicationRouter");
+const roomRoutes = require("./routes/roomRouter")
+
 const app = express();
 
 // Connect to MongoDB
@@ -25,7 +27,8 @@ app.use(cors({ origin: "*" }));
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/uploads", express.static(path.join(__dirname, "./uploads")));
+// Узгоджуємо шлях із multer у publicationRouter.js
+app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // Змінено на "uploads" для ясності
 
 if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev"));
@@ -50,5 +53,6 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/reels", reelsRouter);
 app.use("/api/v1/publication", publicationRouter);
 app.use("/api/v1/comments", commentRouter);
+app.use("/api/v1/task-room", roomRoutes);
 
 module.exports = app;
