@@ -16,7 +16,7 @@ const addOrRemoveLike = async (req, res) => {
       { new: true }
     );
 
-    res.status(200).json({nessage: "like added or removed", reel: updatedReel});
+    res.status(200).json({message: `Like ${isLiked ? "removed" : "added"}!`, reel: updatedReel});
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

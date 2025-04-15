@@ -27,7 +27,7 @@ const userModel = new mongoose.Schema(
     saved: [
       {
         item: { type: mongoose.Schema.Types.ObjectId, refPath: "itemType" },
-        itemType: { type: String, enum: ["Reel", "Post"] },
+        itemType: { type: String, enum: ["Reel", "Publication"] },
       },
     ],
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
