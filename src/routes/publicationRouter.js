@@ -4,7 +4,6 @@ const Publication = require("../models/publicationsModel");
 const multer = require("multer");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
-const authMiddleware = require("../middleware/authMiddleware");
 
 // Configure multer for single file uploads
 const storage = multer.diskStorage({
@@ -191,7 +190,7 @@ const upload = multer({
  *       401:
  *         description: Unauthorized
  */
-router.post("/create", [authMiddleware, upload], async (req, res) => {
+router.post("/create", [upload], async (req, res) => {
   try {
     if (!req.file) {
       return res
@@ -272,7 +271,7 @@ router.post("/create", [authMiddleware, upload], async (req, res) => {
  *       404:
  *         description: Publication not found
  */
-router.put("/edit/:id", [authMiddleware, upload], async (req, res) => {
+router.put("/edit/:id", [upload], async (req, res) => {
   try {
     const updateData = {};
     if (req.file) {
@@ -351,7 +350,7 @@ router.put("/edit/:id", [authMiddleware, upload], async (req, res) => {
  *       404:
  *         description: Publication not found
  */
-router.delete("/delete/:id", authMiddleware, async (req, res) => {
+router.delete("/delete/:id", async (req, res) => {
   try {
     const publication = await Publication.findById(req.params.id);
     if (!publication) {
@@ -550,7 +549,7 @@ router.get("/:id", async (req, res) => {
  *       404:
  *         description: Publication not found
  */
-router.post("/:id/comment", authMiddleware, async (req, res) => {
+router.post("/:id/comment", async (req, res) => {
   try {
     const { text } = req.body;
     if (!text) {
@@ -618,7 +617,7 @@ router.post("/:id/comment", authMiddleware, async (req, res) => {
  *       404:
  *         description: Publication not found
  */
-router.post("/:id/like", authMiddleware, async (req, res) => {
+router.post("/:id/like", async (req, res) => {
   try {
     const publication = await Publication.findById(req.params.id);
     if (!publication) {
@@ -685,7 +684,7 @@ router.post("/:id/like", authMiddleware, async (req, res) => {
  *       404:
  *         description: Publication not found
  */
-router.post("/:id/view", authMiddleware, async (req, res) => {
+router.post("/:id/view", async (req, res) => {
   try {
     const publication = await Publication.findById(req.params.id);
     if (!publication) {
@@ -745,7 +744,7 @@ router.post("/:id/view", authMiddleware, async (req, res) => {
  *       404:
  *         description: Publication not found
  */
-router.post("/:id/share", authMiddleware, async (req, res) => {
+router.post("/:id/share", async (req, res) => {
   try {
     const publication = await Publication.findById(req.params.id);
     if (!publication) {
