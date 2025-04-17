@@ -5,7 +5,6 @@ const multer = require("multer");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 
-// Configure multer for single file uploads
 const storage = multer.diskStorage({
   destination: "./src/uploads/",
   filename: (req, file, cb) => {
@@ -33,6 +32,11 @@ const upload = multer({
 /**
  * @swagger
  * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  *   schemas:
  *     Publication:
  *       type: object
@@ -192,10 +196,12 @@ const upload = multer({
  */
 router.post("/create", [upload], async (req, res) => {
   try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
     if (!req.file) {
-      return res
-        .status(400)
-        .json({ success: false, message: "File is required" });
+      return res.status(400).json({ success: false, message: "File is required" });
     }
 
     const content = {
@@ -204,7 +210,7 @@ router.post("/create", [upload], async (req, res) => {
     };
 
     const publication = new Publication({
-      author: req.user._id, // Используем ID из токена
+      author: req.user._id,
       content: [content],
       description: req.body.description || "",
     });
@@ -273,6 +279,10 @@ router.post("/create", [upload], async (req, res) => {
  */
 router.put("/edit/:id", [upload], async (req, res) => {
   try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
     const updateData = {};
     if (req.file) {
       updateData.content = [{
@@ -285,22 +295,16 @@ router.put("/edit/:id", [upload], async (req, res) => {
     }
 
     if (Object.keys(updateData).length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "No fields to update" });
+      return res.status(400).json({ success: false, message: "No fields to update" });
     }
 
     const publication = await Publication.findById(req.params.id);
     if (!publication) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Publication not found" });
+      return res.status(404).json({ success: false, message: "Publication not found" });
     }
 
     if (!publication.author.equals(req.user._id)) {
-      return res
-        .status(403)
-        .json({ success: false, message: "Not authorized to edit" });
+      return res.status(403).json({ success: false, message: "Not authorized to edit" });
     }
 
     const updatedPublication = await Publication.findByIdAndUpdate(
@@ -352,17 +356,17 @@ router.put("/edit/:id", [upload], async (req, res) => {
  */
 router.delete("/delete/:id", async (req, res) => {
   try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
     const publication = await Publication.findById(req.params.id);
     if (!publication) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Publication not found" });
+      return res.status(404).json({ success: false, message: "Publication not found" });
     }
 
     if (!publication.author.equals(req.user._id)) {
-      return res
-        .status(403)
-        .json({ success: false, message: "Not authorized to delete" });
+      return res.status(403).json({ success: false, message: "Not authorized to delete" });
     }
 
     await Publication.findByIdAndDelete(req.params.id);
@@ -492,9 +496,7 @@ router.get("/:id", async (req, res) => {
       "name email"
     );
     if (!publication) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Publication not found" });
+      return res.status(404).json({ success: false, message: "Publication not found" });
     }
     res.status(200).json({ success: true, data: publication });
   } catch (error) {
@@ -551,18 +553,18 @@ router.get("/:id", async (req, res) => {
  */
 router.post("/:id/comment", async (req, res) => {
   try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
     const { text } = req.body;
     if (!text) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Text is required" });
+      return res.status(400).json({ success: false, message: "Text is required" });
     }
 
     const publication = await Publication.findById(req.params.id);
     if (!publication) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Publication not found" });
+      return res.status(404).json({ success: false, message: "Publication not found" });
     }
 
     publication.comments.push({
@@ -619,11 +621,13 @@ router.post("/:id/comment", async (req, res) => {
  */
 router.post("/:id/like", async (req, res) => {
   try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
     const publication = await Publication.findById(req.params.id);
     if (!publication) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Publication not found" });
+      return res.status(404).json({ success: false, message: "Publication not found" });
     }
 
     const hasLiked = publication.likes.some((like) =>
@@ -686,11 +690,13 @@ router.post("/:id/like", async (req, res) => {
  */
 router.post("/:id/view", async (req, res) => {
   try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
     const publication = await Publication.findById(req.params.id);
     if (!publication) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Publication not found" });
+      return res.status(404).json({ success: false, message: "Publication not found" });
     }
 
     publication.views.push({
@@ -746,11 +752,13 @@ router.post("/:id/view", async (req, res) => {
  */
 router.post("/:id/share", async (req, res) => {
   try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
     const publication = await Publication.findById(req.params.id);
     if (!publication) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Publication not found" });
+      return res.status(404).json({ success: false, message: "Publication not found" });
     }
 
     publication.shares.push({
