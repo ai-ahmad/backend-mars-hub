@@ -28,3 +28,6 @@ const addOrRemoveLike = async (req, res) => {
 };
 
 module.exports = { addOrRemoveLike };
+
+
+// comment controlets all functions crud 
