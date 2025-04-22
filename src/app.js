@@ -36,6 +36,9 @@ if (process.env.NODE_ENV !== "production") {
   app.use(morgan("combined"));
 }
 
+
+//  testing
+
 // SWAGGER
 app.use("/swagger", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
