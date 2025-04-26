@@ -1,6 +1,7 @@
 const handleDisconnect = require("./handlers/handleDisconnect");
 const handleGetFollowing = require("./handlers/handleGetFollowing");
 const handleMessenger = require("./handlers/handleMessenger");
+const Messenger = require("../models/messangerModel");
 
 const socketHandler = (io) => {
   io.on("connection", (socket) => {
@@ -9,12 +10,28 @@ const socketHandler = (io) => {
     let connectedUserId = null;
 
     socket.on("get-following", async (userId) => {
+      connectedUserId = userId;
       await handleGetFollowing(io, socket, connectedUserId, userId);
     });
 
-    socket.on("join-room", (roomId) => {
-      socket.join(roomId);
-      console.log(`🟢 User ${socket.id} joined room: ${roomId}`);
+    socket.on("join-room", async (roomId) => {
+      try {
+        socket.join(roomId);
+        console.log(`🟢 User ${socket.id} joined room: ${roomId}`);
+
+        const messenger = await Messenger.findOne({ roomId })
+          .populate("messages.sender")
+          .exec();
+
+        if (messenger) {
+          socket.emit("room-messages", messenger.messages);
+        } else {
+          socket.emit("room-messages", []);
+        }
+      } catch (err) {
+        console.error("Error in join-room:", err);
+        socket.emit("error", { message: "Failed to load room messages" });
+      }
     });
 
     socket.on("send-message", async ({ roomId, message, sender }) => {
