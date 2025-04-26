@@ -66,7 +66,7 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { username, password } = req.body;
-    const user = await userModel.findOne({ username }).select("-password");
+    const user = await userModel.findOne({ username });
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
@@ -82,10 +82,12 @@ const login = async (req, res) => {
       { expiresIn: "1d" }
     );
 
+    const userWithoutPassword = await userModel.findOne({username}).select("-password")
+
     res.json({
       success: true,
       message: "Login successful",
-      user,
+      user: userWithoutPassword,
       token,
     });
   } catch (error) {
@@ -246,3 +248,9 @@ module.exports = {
   addSaved,
   // updateProfilePhoto
 };
+
+
+
+
+
+// testing code 2

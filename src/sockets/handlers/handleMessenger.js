@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const Messenger = require("../models/messenger");
+const Messenger = require("../../models/messangerModel");
 
 const handleMessenger = async (io, socket, roomId, message, sender) => {
   try {

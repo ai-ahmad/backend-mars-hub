@@ -201,7 +201,7 @@ const userCrud = crudCreator(userModel, {
  *     tags: [Users]
  *     description: Adds another user to the following list of the authenticated user.
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -247,7 +247,7 @@ const userCrud = crudCreator(userModel, {
  *     tags: [Users]
  *     description: Updates the status of the authenticated user.
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: status
@@ -291,7 +291,7 @@ const userCrud = crudCreator(userModel, {
  *     tags: [Users]
  *     description: Saves an item for the authenticated user.
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: item
@@ -348,7 +348,7 @@ const userCrud = crudCreator(userModel, {
  *     description: Returns a list of users whose usernames match the search query (case-insensitive).
  *     tags: [Users]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: query

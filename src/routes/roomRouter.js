@@ -57,11 +57,6 @@ const authMiddleware = require("../middleware/authMiddleware");
  *       required:
  *         - name
  *         - creator
- *   securitySchemes:
- *     bearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
  */
 
 /**

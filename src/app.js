@@ -12,10 +12,9 @@ const connectDB = require("./config/database");
 const userRouter = require("./routes/userRouter");
 const authRouter = require("./routes/authRouter");
 const reelsRouter = require("./routes/reelsRouter");
-const commentRouter = require("./routes/commentRouter");
 const publicationRouter = require("./routes/publicationRouter");
 const roomRoutes = require("./routes/roomRouter")
-const messangerRouter = require("./routes/messangerRouter")
+const commentRouter = require("./routes/commentRouter")
 
 const app = express();
 
@@ -33,6 +32,9 @@ if (process.env.NODE_ENV !== "production") {
   app.use(morgan("combined"));
 }
 
+
+//  testing
+
 // SWAGGER
 app.use("/swagger", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
@@ -48,9 +50,11 @@ app.use((req, res, next) => {
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/reels", reelsRouter);
-app.use("/api/v1/publication", publicationRouter);
-app.use("/api/v1/comments", commentRouter);
-app.use("/api/v1/messanger", messangerRouter);
+app.use("/api/v1/publications", publicationRouter);
 app.use("/api/v1/task-room", roomRoutes);
+app.use("/api/v1/comments", commentRouter);
+
+
+
 
 module.exports = app;

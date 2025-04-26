@@ -1,37 +1,49 @@
-// models/Publication.js (unchanged)
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const PublicationSchema = new mongoose.Schema({
   author: {
-    type: String,
-    required: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
   },
   content: [{
     url: String,
-    type: { type: String, enum: ['image', 'video'] }
+    type: { type: String, enum: ["image", "video"] },
   }],
   likes: [{
-    userId: String,
-    date: { type: Date, default: Date.now }
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    date: { type: Date, default: Date.now },
   }],
   comments: [{
-    userId: String,
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     text: String,
-    date: { type: Date, default: Date.now }
+    date: { type: Date, default: Date.now },
   }],
   views: [{
-    userId: String,
-    date: { type: Date, default: Date.now }
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    date: { type: Date, default: Date.now },
   }],
   description: String,
   shares: [{
-    userId: String,
-    date: { type: Date, default: Date.now }
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    date: { type: Date, default: Date.now },
   }],
   createdAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
-module.exports = mongoose.model('Publication', PublicationSchema);
+module.exports = mongoose.model("Publication", PublicationSchema);

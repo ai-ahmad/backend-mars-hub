@@ -246,7 +246,7 @@ router.delete("/:id", authMiddleware, reelsController.remove);
  *     summary: Добавить или удалить лайк на рил
  *     tags: [Reels]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -281,7 +281,7 @@ router.post("/:id/like", authMiddleware, addOrRemoveLike);
  *     summary: Добавить просмотр рила
  *     tags: [Reels]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
