@@ -10,7 +10,7 @@ const socketHandler = (io) => {
     let connectedUserId = null;
 
     socket.on("get-following", async (userId) => {
-      connectedUserId = userId;
+      connectedUserId = { current: userId };
       await handleGetFollowing(io, socket, connectedUserId, userId);
     });
 
