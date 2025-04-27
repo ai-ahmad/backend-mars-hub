@@ -6,12 +6,10 @@ const Messenger = require("../models/messangerModel");
 const socketHandler = (io) => {
   io.on("connection", (socket) => {
     console.log(`🔌 New client connected: ${socket.id}`);
-
-    let connectedUserId = null;
-
+    
     socket.on("get-following", async (userId) => {
-      connectedUserId = { current: userId };
-      await handleGetFollowing(io, socket, connectedUserId, userId);
+      socket.connectedUserId = userId;
+      await handleGetFollowing(io, socket, userId);
     });
 
     socket.on("join-room", async (roomId) => {
@@ -40,7 +38,7 @@ const socketHandler = (io) => {
 
     socket.on("disconnect", async () => {
       console.log(`❌ Client disconnected: ${socket.id}`);
-      await handleDisconnect(io, socket, connectedUserId);
+      await handleDisconnect(io, socket, socket.connectedUserId);
     });
   });
 };

@@ -1,13 +1,11 @@
 const userModel = require("../../models/userModel");
 
-const handleGetFollowing = async (io, socket, userIdRef, userId) => {
+const handleGetFollowing = async (io, socket, userId) => {
   if (!userId) {
     return socket.emit("error", { message: "User ID is required" });
   }
 
   try {
-    userIdRef.current = userId;
-
     const user = await userModel
       .findByIdAndUpdate(userId, { status: "online" }, { new: true })
       .select("following followers")
@@ -18,27 +16,20 @@ const handleGetFollowing = async (io, socket, userIdRef, userId) => {
       return socket.emit("error", { message: "User not found" });
     }
 
-    user.following.forEach((followedUser) => {
-      socket.join(`user-${followedUser._id}`);
-    });
-
-    user.followers.forEach((follower) => {
-      socket.join(`user-${follower._id}`);
-    });
+    socket.join(`user-${userId}`);
+    const rooms = [
+      ...user.following.map((followedUser) => {
+        socket.join(`user-${followedUser._id}`);
+        return `user-${followedUser._id}`;
+      }),
+      `user-${userId}`,
+    ];
 
     socket.emit("send-following", user.following);
 
-    user.followers.forEach((follower) => {
-      io.to(`user-${follower._id}`).emit("user-status-updated", {
-        userId,
-        status: "online",
-      });
-    });
-    user.following.forEach((followedUser) => {
-      io.to(`user-${followedUser._id}`).emit("user-status-updated", {
-        userId,
-        status: "online",
-      });
+    io.to(rooms).emit("user-status-updated", {
+      userId: userId.toString(),
+      status: "online",
     });
   } catch (error) {
     console.error("❌ Error in get-following:", error);

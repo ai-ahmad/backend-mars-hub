@@ -1,34 +1,42 @@
 const userModel = require("../../models/userModel");
 
-const handleDisconnect = async (io, socket, userIdRef) => {
-  if (!userIdRef.current) return;
+const handleDisconnect = async (io, socket, userId) => {
+  if (!userId) {
+    console.log("No userId provided for disconnect");
+    return;
+  }
+
+  console.log(userId)
 
   try {
     const user = await userModel
-      .findByIdAndUpdate(
-        userIdRef.current,
-        { status: "offline" },
-        { new: true }
-      )
-      .populate("followers", "_id")
-      .populate("following", "_id");
+      .findByIdAndUpdate(userId, { status: "offline" }, { new: true })
+      .populate("followers")
+      .populate("following");
 
-    user.followers.forEach((follower) => {
-      io.to(`user-${follower._id}`).emit("user-status-updated", {
-        userId: userIdRef.current,
+    if (!user) {
+      console.log(`User ${userId} not found during disconnect`);
+      return;
+    }
+
+    const rooms = [
+      ...user.following.map((followedUser) => `user-${followedUser._id}`),
+      `user-${userId}`,
+    ];
+
+    if (rooms.length > 0) {
+      io.to(rooms).emit("user-status-updated", {
+        userId: userId.toString(),
         status: "offline",
       });
-    });
+    } else {
+      console.log(`No rooms to emit user-status-updated for user ${userId}`);
+    }
 
-    user.following.forEach((followerUser) => {
-      io.to(`user-${followerUser._id}`).emit("user-status-updated", {
-        userId: userIdRef.current,
-        status: "offline",
-      });
+    rooms.forEach((room) => {
+      socket.leave(room);
+      console.log(`Socket ${socket.id} left room ${room}`);
     });
-
-    socket.leaveAll();
-    console.log(`🟠 User ${userIdRef.current} has left all rooms`);
   } catch (error) {
     console.error("❌ Error updating user status on disconnect:", error);
   }

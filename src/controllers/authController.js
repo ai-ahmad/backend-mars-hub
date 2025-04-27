@@ -82,7 +82,9 @@ const login = async (req, res) => {
       { expiresIn: "1d" }
     );
 
-    const userWithoutPassword = await userModel.findOne({username}).select("-password")
+    const userWithoutPassword = await userModel
+      .findOne({ username })
+      .select("-password");
 
     res.json({
       success: true,
@@ -173,33 +175,62 @@ const updateUserStatus = async (req, res) => {
 const addFollowing = async (req, res) => {
   try {
     const { followingId, id } = req.params;
-    if (!followingId) {
-      return res.status(400).json({ message: "Following ID is required" });
+
+    if (!id || !followingId) {
+      return res
+        .status(400)
+        .json({ message: "User ID and Following ID are required" });
     }
-    const user = await userModel.findByIdAndUpdate(
+
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(followingId)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Invalid User ID or Following ID format" });
+    }
+
+    const user = await userModel.findById(id);
+    const followingUser = await userModel.findById(followingId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (!followingUser) {
+      return res.status(404).json({ message: "User to follow not found" });
+    }
+
+    if (id === followingId) {
+      return res.status(400).json({ message: "Cannot follow yourself" });
+    }
+
+    if (user.following.includes(followingId)) {
+      return res
+        .status(400)
+        .json({ message: "You are already following this user" });
+    }
+
+    const newUser = await userModel.findByIdAndUpdate(
       id,
       { $push: { following: followingId } },
       { new: true }
     );
+
     await userModel.findByIdAndUpdate(
       followingId,
-      { $push: { follower: id } },
+      { $push: { followers: id } },
       { new: true }
     );
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    const populatedUser = await userModel
-      .findById(user._id)
-      .populate(populateFields);
 
     res.json({
       success: true,
       message: "Following added successfully",
-      user: populatedUser,
+      user: newUser,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error in addFollowing:", error);
+    res.status(500).json({ message: "Server error: " + error.message });
   }
 };
 
@@ -248,9 +279,5 @@ module.exports = {
   addSaved,
   // updateProfilePhoto
 };
-
-
-
-
 
 // testing code 2
