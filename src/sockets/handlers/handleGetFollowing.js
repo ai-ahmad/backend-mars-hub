@@ -8,10 +8,8 @@ const handleGetFollowing = async (io, socket, userIdRef, userId) => {
   try {
     userIdRef.current = userId;
 
-    await userModel.findByIdAndUpdate(userId, { status: "online" });
-
     const user = await userModel
-      .findById(userId)
+      .findByIdAndUpdate(userId, { status: "online" }, { new: true })
       .select("following followers")
       .populate("following")
       .populate("followers");
@@ -32,6 +30,12 @@ const handleGetFollowing = async (io, socket, userIdRef, userId) => {
 
     user.followers.forEach((follower) => {
       io.to(`user-${follower._id}`).emit("user-status-updated", {
+        userId,
+        status: "online",
+      });
+    });
+    user.following.forEach((followedUser) => {
+      io.to(`user-${followedUser._id}`).emit("user-status-updated", {
         userId,
         status: "online",
       });

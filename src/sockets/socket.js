@@ -40,7 +40,7 @@ const socketHandler = (io) => {
 
     socket.on("disconnect", async () => {
       console.log(`❌ Client disconnected: ${socket.id}`);
-      await handleDisconnect(io, connectedUserId);
+      await handleDisconnect(io, socket, connectedUserId);
     });
   });
 };

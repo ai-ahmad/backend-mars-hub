@@ -1,6 +1,6 @@
 const userModel = require("../../models/userModel");
 
-const handleDisconnect = async (io, userIdRef) => {
+const handleDisconnect = async (io, socket, userIdRef) => {
   if (!userIdRef.current) return;
 
   try {
@@ -10,10 +10,18 @@ const handleDisconnect = async (io, userIdRef) => {
         { status: "offline" },
         { new: true }
       )
-      .populate("followers", "_id");
+      .populate("followers", "_id")
+      .populate("following", "_id");
 
     user.followers.forEach((follower) => {
       io.to(`user-${follower._id}`).emit("user-status-updated", {
+        userId: userIdRef.current,
+        status: "offline",
+      });
+    });
+
+    user.following.forEach((followerUser) => {
+      io.to(`user-${followerUser._id}`).emit("user-status-updated", {
         userId: userIdRef.current,
         status: "offline",
       });
