@@ -13,8 +13,8 @@ const handleGetFollowing = async (io, socket, userIdRef, userId) => {
     const user = await userModel
       .findById(userId)
       .select("following followers")
-      .populate("following", "_id username status firstName lastName")
-      .populate("followers", "_id");
+      .populate("following")
+      .populate("followers");
 
     if (!user) {
       return socket.emit("error", { message: "User not found" });
