@@ -6,7 +6,7 @@ const Messenger = require("../models/messangerModel");
 const socketHandler = (io) => {
   io.on("connection", (socket) => {
     console.log(`🔌 New client connected: ${socket.id}`);
-    
+
     socket.on("get-following", async (userId) => {
       socket.connectedUserId = userId;
       await handleGetFollowing(io, socket, userId);
@@ -16,7 +16,13 @@ const socketHandler = (io) => {
       try {
         socket.join(roomId);
         console.log(`🟢 User ${socket.id} joined room: ${roomId}`);
+      } catch (err) {
+        console.error("Error in join-room:", err);
+      }
+    });
 
+    socket.on("get-room-messages", async (roomId) => {
+      try {
         const messenger = await Messenger.findOne({ roomId })
           .populate("messages.sender")
           .exec();
@@ -26,8 +32,7 @@ const socketHandler = (io) => {
         } else {
           socket.emit("room-messages", []);
         }
-      } catch (err) {
-        console.error("Error in join-room:", err);
+      } catch (error) {
         socket.emit("error", { message: "Failed to load room messages" });
       }
     });

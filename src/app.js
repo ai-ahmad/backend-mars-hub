@@ -15,6 +15,7 @@ const reelsRouter = require("./routes/reelsRouter");
 const publicationRouter = require("./routes/publicationRouter");
 const roomRoutes = require("./routes/roomRouter")
 const commentRouter = require("./routes/commentRouter")
+const messangerRouter = require("./routes/messangerRouter")
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use("/api/v1/reels", reelsRouter);
 app.use("/api/v1/publications", publicationRouter);
 app.use("/api/v1/task-room", roomRoutes);
 app.use("/api/v1/comments", commentRouter);
+app.use("/api/v1/messangers", messangerRouter);
 
 
 
