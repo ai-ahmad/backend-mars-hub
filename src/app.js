@@ -52,7 +52,7 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/reels", reelsRouter);
 app.use("/api/v1/publications", publicationRouter);
-app.use("/api/v1/task-room", roomRoutes);
+app.use("/api/v1/rooms", roomRoutes);
 app.use("/api/v1/comments", commentRouter);
 app.use("/api/v1/messangers", messangerRouter);
 
