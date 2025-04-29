@@ -197,7 +197,9 @@ router.post("/create", [upload, authMiddleware], async (req, res) => {
     }
 
     if (!req.file) {
-      return res.status(400).json({ success: false, message: "File is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "File is required" });
     }
 
     const content = {
@@ -214,7 +216,10 @@ router.post("/create", [upload, authMiddleware], async (req, res) => {
     await publication.save();
     const populatedPublication = await Publication.findById(publication._id)
       .populate("author", "name email")
-      .populate("likes.userId comments.userId views.userId shares.userId", "name email");
+      .populate(
+        "likes.userId comments.userId views.userId shares.userId",
+        "name email"
+      );
 
     res.status(201).json({ success: true, data: populatedPublication });
   } catch (error) {
@@ -281,33 +286,44 @@ router.put("/edit/:id", [upload, authMiddleware], async (req, res) => {
 
     const updateData = {};
     if (req.file) {
-      updateData.content = [{
-        url: `/uploads/${req.file.filename}`,
-        type: req.file.mimetype.startsWith("image") ? "image" : "video",
-      }];
+      updateData.content = [
+        {
+          url: `/uploads/${req.file.filename}`,
+          type: req.file.mimetype.startsWith("image") ? "image" : "video",
+        },
+      ];
     }
     if (req.body.description) {
       updateData.description = req.body.description;
     }
 
     if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ success: false, message: "No fields to update" });
+      return res
+        .status(400)
+        .json({ success: false, message: "No fields to update" });
     }
 
     const publication = await Publication.findById(req.params.id);
     if (!publication) {
-      return res.status(404).json({ success: false, message: "Publication not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Publication not found" });
     }
 
     if (!publication.author.equals(req.user.userId)) {
-      return res.status(403).json({ success: false, message: "Not authorized to edit" });
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to edit" });
     }
 
     const updatedPublication = await Publication.findByIdAndUpdate(
       req.params.id,
       { $set: updateData },
       { new: true }
-    ).populate("author likes.userId comments.userId views.userId shares.userId", "name email");
+    ).populate(
+      "author likes.userId comments.userId views.userId shares.userId",
+      "name email"
+    );
 
     res.status(200).json({ success: true, data: updatedPublication });
   } catch (error) {
@@ -358,11 +374,15 @@ router.delete("/delete/:id", authMiddleware, async (req, res) => {
 
     const publication = await Publication.findById(req.params.id);
     if (!publication) {
-      return res.status(404).json({ success: false, message: "Publication not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Publication not found" });
     }
 
     if (!publication.author.equals(req.user.userId)) {
-      return res.status(403).json({ success: false, message: "Not authorized to delete" });
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to delete" });
     }
 
     await Publication.findByIdAndDelete(req.params.id);
@@ -437,7 +457,10 @@ router.get("/", async (req, res) => {
       .sort(sort)
       .skip(skip)
       .limit(limit)
-      .populate("author likes.userId comments.userId views.userId shares.userId", "name email");
+      .populate(
+        "author likes.userId comments.userId views.userId shares.userId",
+        "username firstName lastName profileImage grade reputation"
+      );
 
     const total = await Publication.countDocuments();
     const pages = Math.ceil(total / limit);
@@ -492,7 +515,9 @@ router.get("/:id", async (req, res) => {
       "name email"
     );
     if (!publication) {
-      return res.status(404).json({ success: false, message: "Publication not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Publication not found" });
     }
     res.status(200).json({ success: true, data: publication });
   } catch (error) {
@@ -555,12 +580,16 @@ router.post("/:id/comment", authMiddleware, async (req, res) => {
 
     const { text } = req.body;
     if (!text) {
-      return res.status(400).json({ success: false, message: "Text is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Text is required" });
     }
 
     const publication = await Publication.findById(req.params.id);
     if (!publication) {
-      return res.status(404).json({ success: false, message: "Publication not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Publication not found" });
     }
 
     publication.comments.push({
@@ -569,7 +598,9 @@ router.post("/:id/comment", authMiddleware, async (req, res) => {
     });
 
     await publication.save();
-    const populatedPublication = await Publication.findById(publication._id).populate(
+    const populatedPublication = await Publication.findById(
+      publication._id
+    ).populate(
       "author likes.userId comments.userId views.userId shares.userId",
       "name email"
     );
@@ -623,7 +654,9 @@ router.post("/:id/like", authMiddleware, async (req, res) => {
 
     const publication = await Publication.findById(req.params.id);
     if (!publication) {
-      return res.status(404).json({ success: false, message: "Publication not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Publication not found" });
     }
 
     const hasLiked = publication.likes.some((like) =>
@@ -638,7 +671,9 @@ router.post("/:id/like", authMiddleware, async (req, res) => {
     });
 
     await publication.save();
-    const populatedPublication = await Publication.findById(publication._id).populate(
+    const populatedPublication = await Publication.findById(
+      publication._id
+    ).populate(
       "author likes.userId comments.userId views.userId shares.userId",
       "name email"
     );
@@ -692,7 +727,9 @@ router.post("/:id/view", authMiddleware, async (req, res) => {
 
     const publication = await Publication.findById(req.params.id);
     if (!publication) {
-      return res.status(404).json({ success: false, message: "Publication not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Publication not found" });
     }
 
     publication.views.push({
@@ -700,7 +737,9 @@ router.post("/:id/view", authMiddleware, async (req, res) => {
     });
 
     await publication.save();
-    const populatedPublication = await Publication.findById(publication._id).populate(
+    const populatedPublication = await Publication.findById(
+      publication._id
+    ).populate(
       "author likes.userId comments.userId views.userId shares.userId",
       "name email"
     );
@@ -754,7 +793,9 @@ router.post("/:id/share", authMiddleware, async (req, res) => {
 
     const publication = await Publication.findById(req.params.id);
     if (!publication) {
-      return res.status(404).json({ success: false, message: "Publication not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Publication not found" });
     }
 
     publication.shares.push({
@@ -762,7 +803,9 @@ router.post("/:id/share", authMiddleware, async (req, res) => {
     });
 
     await publication.save();
-    const populatedPublication = await Publication.findById(publication._id).populate(
+    const populatedPublication = await Publication.findById(
+      publication._id
+    ).populate(
       "author likes.userId comments.userId views.userId shares.userId",
       "name email"
     );
