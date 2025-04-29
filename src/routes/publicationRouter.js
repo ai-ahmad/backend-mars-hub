@@ -547,7 +547,7 @@ router.get("/:id", async (req, res) => {
  *       404:
  *         description: Publication not found
  */
-router.post("/:id/comment", async (req, res) => {
+router.post("/:id/comment", authMiddleware, async (req, res) => {
   try {
     if (!req.user || !req.user.userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -615,7 +615,7 @@ router.post("/:id/comment", async (req, res) => {
  *       404:
  *         description: Publication not found
  */
-router.post("/:id/like", async (req, res) => {
+router.post("/:id/like", authMiddleware, async (req, res) => {
   try {
     if (!req.user || !req.user.userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -684,7 +684,7 @@ router.post("/:id/like", async (req, res) => {
  *       404:
  *         description: Publication not found
  */
-router.post("/:id/view", async (req, res) => {
+router.post("/:id/view", authMiddleware, async (req, res) => {
   try {
     if (!req.user || !req.user.userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -746,7 +746,7 @@ router.post("/:id/view", async (req, res) => {
  *       404:
  *         description: Publication not found
  */
-router.post("/:id/share", async (req, res) => {
+router.post("/:id/share", authMiddleware, async (req, res) => {
   try {
     if (!req.user || !req.user.userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
