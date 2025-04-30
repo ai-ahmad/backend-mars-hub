@@ -5,7 +5,6 @@ const Messenger = require("../models/messangerModel");
 
 const socketHandler = (io) => {
   io.on("connection", (socket) => {
-    console.log(`🔌 New client connected: ${socket.id}`);
 
     socket.on("get-following", async (userId) => {
       socket.connectedUserId = userId;
@@ -15,7 +14,6 @@ const socketHandler = (io) => {
     socket.on("join-room", async (roomId) => {
       try {
         socket.join(roomId);
-        console.log(`🟢 User ${socket.id} joined room: ${roomId}`);
       } catch (err) {
         console.error("Error in join-room:", err);
       }
@@ -42,7 +40,6 @@ const socketHandler = (io) => {
     });
 
     socket.on("disconnect", async () => {
-      console.log(`❌ Client disconnected: ${socket.id}`);
       await handleDisconnect(io, socket, socket.connectedUserId);
     });
   });

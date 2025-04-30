@@ -97,6 +97,23 @@ const login = async (req, res) => {
   }
 };
 
+const getUserByUsername = async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await userModel
+      .findOne({ username })
+      .select("-password")
+      .populate(["publications", "reels", "followers", "following"]);
+    if (!user) {
+      return res.status(400).json({ message: "User Not Found" });
+    }
+    res.status(200).json({ success: true, user });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
@@ -277,6 +294,7 @@ module.exports = {
   updateUserStatus,
   addFollowing,
   addSaved,
+  getUserByUsername,
   // updateProfilePhoto
 };
 

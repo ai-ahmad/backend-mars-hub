@@ -6,8 +6,6 @@ const handleDisconnect = async (io, socket, userId) => {
     return;
   }
 
-  console.log(userId)
-
   try {
     const user = await userModel
       .findByIdAndUpdate(userId, { status: "offline" }, { new: true })
@@ -35,7 +33,6 @@ const handleDisconnect = async (io, socket, userId) => {
 
     rooms.forEach((room) => {
       socket.leave(room);
-      console.log(`Socket ${socket.id} left room ${room}`);
     });
   } catch (error) {
     console.error("❌ Error updating user status on disconnect:", error);

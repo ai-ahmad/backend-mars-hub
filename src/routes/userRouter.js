@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const crudCreator = require("../services/crudCreator");
 const userModel = require("../models/userModel");
-const { updateUser, addFollowing, addSaved, updateUserStatus } = require("../controllers/authController");
+const { updateUser, addFollowing, addSaved, updateUserStatus, getUserByUsername } = require("../controllers/authController");
 const authMiddleware = require("../middleware/authMiddleware");
 const { searchUsers } = require("../controllers/searchController");
 
@@ -372,6 +372,7 @@ const userCrud = crudCreator(userModel, {
  *       500:
  *         description: Internal server error.
  */
+router.get("/:username", getUserByUsername)
 router.get("/search", searchUsers);
 router.put("/:id/status", authMiddleware, updateUserStatus)
 router.post("/:id/saved", authMiddleware, addSaved)
