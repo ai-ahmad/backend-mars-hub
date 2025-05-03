@@ -252,6 +252,68 @@ const addFollowing = async (req, res) => {
   }
 };
 
+const removeFollowing = async (req, res) => {
+  try {
+    const { followingId, id } = req.params;
+
+    if (!id || !followingId) {
+      return res
+        .status(400)
+        .json({ message: "User ID and Following ID are required" });
+    }
+
+    if (
+      !mongoose.Types.ObjectId.isValid(id) ||
+      !mongoose.Types.ObjectId.isValid(followingId)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Invalid User ID or Following ID format" });
+    }
+
+    const user = await userModel.findById(id);
+    const followingUser = await userModel.findById(followingId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (!followingUser) {
+      return res.status(404).json({ message: "User to unfollow not found" });
+    }
+
+    if (id === followingId) {
+      return res.status(400).json({ message: "Cannot unfollow yourself" });
+    }
+
+    if (!user.following.includes(followingId)) {
+      return res
+        .status(400)
+        .json({ message: "You are not following this user" });
+    }
+
+    const updatedUser = await userModel.findByIdAndUpdate(
+      id,
+      { $pull: { following: followingId } },
+      { new: true }
+    );
+
+    await userModel.findByIdAndUpdate(
+      followingId,
+      { $pull: { followers: id } },
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      message: "Unfollowed successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Error in removeFollowing:", error);
+    res.status(500).json({ message: "Server error: " + error.message });
+  }
+};
+
 const addSaved = async (req, res) => {
   try {
     const { id } = req.params;
@@ -296,6 +358,7 @@ module.exports = {
   addFollowing,
   addSaved,
   getUserByUsername,
+  removeFollowing,
   // updateProfilePhoto
 };
 

@@ -1,14 +1,26 @@
 const router = require("express").Router();
 const crudCreator = require("../services/crudCreator");
 const userModel = require("../models/userModel");
-const { updateUser, addFollowing, addSaved, updateUserStatus } = require("../controllers/authController");
+const {
+  updateUser,
+  addFollowing,
+  addSaved,
+  updateUserStatus,
+  removeFollowing,
+  getUserByUsername,
+} = require("../controllers/authController");
 const authMiddleware = require("../middleware/authMiddleware");
 const { searchUsers } = require("../controllers/searchController");
 
 const userCrud = crudCreator(userModel, {
-  populateFields: ["publications", "reels", "saved.item", "followers", "following"],
+  populateFields: [
+    "publications",
+    "reels",
+    "saved.item",
+    "followers",
+    "following",
+  ],
 });
-
 
 /**
  * @swagger
@@ -192,7 +204,6 @@ const userCrud = crudCreator(userModel, {
  *         description: Успешное удаление
  */
 
-
 /**
  * @swagger
  * /api/v1/users/{id}/follow/{followingId}:
@@ -373,15 +384,16 @@ const userCrud = crudCreator(userModel, {
  *         description: Internal server error.
  */
 router.get("/search", searchUsers);
-router.put("/:id/status", authMiddleware, updateUserStatus)
-router.post("/:id/saved", authMiddleware, addSaved)
-router.post("/:id/follow/:followingId", authMiddleware, addFollowing)
+router.get("/:username", getUserByUsername);
+router.put("/:id/status", authMiddleware, updateUserStatus);
+router.post("/:id/saved", authMiddleware, addSaved);
+router.post("/:id/follow/:followingId", authMiddleware, addFollowing);
+router.post("/:id/unfollow/:followingId", authMiddleware, removeFollowing);
 
 router.get("/", userCrud.getAll);
 router.get("/:id", userCrud.getOne);
 router.put("/:id", authMiddleware, updateUser);
 router.delete("/:id", authMiddleware, userCrud.remove);
-
 
 // router.put("/update-profile-photo", updateProfilePhoto)
 
