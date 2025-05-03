@@ -12,7 +12,6 @@ const {
   addMember,
   removeMember,
 } = require("../controllers/roomController");
-const authMiddleware = require("../middleware/authMiddleware");
 
 /**
  * @swagger
@@ -65,8 +64,6 @@ const authMiddleware = require("../middleware/authMiddleware");
  *   post:
  *     summary: Create a new room
  *     tags: [Rooms]
- *     security:
- *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -80,8 +77,12 @@ const authMiddleware = require("../middleware/authMiddleware");
  *               password_room:
  *                 type: string
  *                 description: Optional password for the room
+ *               creatorId:
+ *                 type: string
+ *                 description: ID of the user creating the room
  *             required:
  *               - name
+ *               - creatorId
  *     responses:
  *       201:
  *         description: Room created successfully
@@ -91,18 +92,21 @@ const authMiddleware = require("../middleware/authMiddleware");
  *               $ref: '#/components/schemas/Room'
  *       400:
  *         description: Bad request
- *       401:
- *         description: Unauthorized
  */
 
 /**
  * @swagger
  * /api/v1/rooms:
  *   get:
- *     summary: Get all rooms for the authenticated user
+ *     summary: Get all rooms for a creator
  *     tags: [Rooms]
- *     security:
- *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: creatorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the creator
  *     responses:
  *       200:
  *         description: List of rooms
@@ -112,8 +116,8 @@ const authMiddleware = require("../middleware/authMiddleware");
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Room'
- *       401:
- *         description: Unauthorized
+ *       400:
+ *         description: Creator ID required
  */
 
 /**
@@ -122,8 +126,6 @@ const authMiddleware = require("../middleware/authMiddleware");
  *   get:
  *     summary: Get a room by ID
  *     tags: [Rooms]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -140,8 +142,6 @@ const authMiddleware = require("../middleware/authMiddleware");
  *               $ref: '#/components/schemas/Room'
  *       404:
  *         description: Room not found
- *       401:
- *         description: Unauthorized
  */
 
 /**
@@ -150,8 +150,6 @@ const authMiddleware = require("../middleware/authMiddleware");
  *   put:
  *     summary: Update a room
  *     tags: [Rooms]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -172,6 +170,11 @@ const authMiddleware = require("../middleware/authMiddleware");
  *               password_room:
  *                 type: string
  *                 description: Updated password for the room
+ *               creatorId:
+ *                 type: string
+ *                 description: ID of the creator
+ *             required:
+ *               - creatorId
  *     responses:
  *       200:
  *         description: Room updated successfully
@@ -179,10 +182,10 @@ const authMiddleware = require("../middleware/authMiddleware");
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Room'
+ *       403:
+ *         description: Forbidden
  *       404:
  *         description: Room not found
- *       401:
- *         description: Unauthorized
  */
 
 /**
@@ -191,8 +194,6 @@ const authMiddleware = require("../middleware/authMiddleware");
  *   delete:
  *     summary: Delete a room
  *     tags: [Rooms]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -200,6 +201,12 @@ const authMiddleware = require("../middleware/authMiddleware");
  *         schema:
  *           type: string
  *         description: Room ID
+ *       - in: query
+ *         name: creatorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the creator
  *     responses:
  *       200:
  *         description: Room deleted successfully
@@ -211,10 +218,10 @@ const authMiddleware = require("../middleware/authMiddleware");
  *                 message:
  *                   type: string
  *                   example: Room deleted
+ *       403:
+ *         description: Forbidden
  *       404:
  *         description: Room not found
- *       401:
- *         description: Unauthorized
  */
 
 /**
@@ -223,8 +230,6 @@ const authMiddleware = require("../middleware/authMiddleware");
  *   post:
  *     summary: Generate an invite link for a room
  *     tags: [Rooms]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -232,6 +237,12 @@ const authMiddleware = require("../middleware/authMiddleware");
  *         schema:
  *           type: string
  *         description: Room ID
+ *       - in: query
+ *         name: creatorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the creator or member
  *     responses:
  *       200:
  *         description: Invite link generated
@@ -243,10 +254,10 @@ const authMiddleware = require("../middleware/authMiddleware");
  *                 inviteLink:
  *                   type: string
  *                   description: URL for joining the room
+ *       403:
+ *         description: Forbidden
  *       404:
  *         description: Room not found
- *       401:
- *         description: Unauthorized
  */
 
 /**
@@ -255,8 +266,6 @@ const authMiddleware = require("../middleware/authMiddleware");
  *   post:
  *     summary: Join a room using an invite token
  *     tags: [Rooms]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: token
@@ -265,7 +274,7 @@ const authMiddleware = require("../middleware/authMiddleware");
  *           type: string
  *         description: Invite token
  *     requestBody:
- *       required: false
+ *       required: true
  *       content:
  *         application/json:
  *           schema:
@@ -274,6 +283,11 @@ const authMiddleware = require("../middleware/authMiddleware");
  *               password_room:
  *                 type: string
  *                 description: Password for the room (if required)
+ *               userId:
+ *                 type: string
+ *                 description: ID of the user joining
+ *             required:
+ *               - userId
  *     responses:
  *       200:
  *         description: Joined room successfully
@@ -282,11 +296,9 @@ const authMiddleware = require("../middleware/authMiddleware");
  *             schema:
  *               $ref: '#/components/schemas/Room'
  *       400:
- *         description: Invalid password
+ *         description: Invalid password or missing userId
  *       404:
  *         description: Invalid invite token
- *       401:
- *         description: Unauthorized
  */
 
 /**
@@ -295,8 +307,6 @@ const authMiddleware = require("../middleware/authMiddleware");
  *   get:
  *     summary: Get all members of a room
  *     tags: [Room Members]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -322,8 +332,6 @@ const authMiddleware = require("../middleware/authMiddleware");
  *                     type: string
  *       404:
  *         description: Room not found
- *       401:
- *         description: Unauthorized
  */
 
 /**
@@ -332,8 +340,6 @@ const authMiddleware = require("../middleware/authMiddleware");
  *   post:
  *     summary: Add a member to a room
  *     tags: [Room Members]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -351,8 +357,12 @@ const authMiddleware = require("../middleware/authMiddleware");
  *               userId:
  *                 type: string
  *                 description: ID of the user to add
+ *               creatorId:
+ *                 type: string
+ *                 description: ID of the creator
  *             required:
  *               - userId
+ *               - creatorId
  *     responses:
  *       200:
  *         description: Member added successfully
@@ -360,10 +370,10 @@ const authMiddleware = require("../middleware/authMiddleware");
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Room'
+ *       403:
+ *         description: Forbidden
  *       404:
  *         description: Room or user not found
- *       401:
- *         description: Unauthorized
  */
 
 /**
@@ -372,8 +382,6 @@ const authMiddleware = require("../middleware/authMiddleware");
  *   delete:
  *     summary: Remove a member from a room
  *     tags: [Room Members]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -387,6 +395,12 @@ const authMiddleware = require("../middleware/authMiddleware");
  *         schema:
  *           type: string
  *         description: User ID
+ *       - in: query
+ *         name: creatorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the creator
  *     responses:
  *       200:
  *         description: Member removed successfully
@@ -398,23 +412,21 @@ const authMiddleware = require("../middleware/authMiddleware");
  *                 message:
  *                   type: string
  *                   example: Member removed
+ *       403:
+ *         description: Forbidden
  *       404:
  *         description: Room or user not found
- *       401:
- *         description: Unauthorized
  */
 
-router.post("/", authMiddleware, createRoom);
-router.get("/", authMiddleware, getRooms);
-router.get("/:id", authMiddleware, getRoom);
-router.put("/:id", authMiddleware, updateRoom);
-router.delete("/:id", authMiddleware, deleteRoom);
-router.post("/:id/invite", authMiddleware, generateInvite);
-router.post("/join/:token", authMiddleware, joinRoom);
-router.get("/:id/members", authMiddleware, getMembers);
-router.post("/:id/members", authMiddleware, addMember);
-router.delete("/:id/members/:userId", authMiddleware, removeMember);
-
-
+router.post("/", createRoom);
+router.get("/", getRooms);
+router.get("/:id", getRoom);
+router.put("/:id", updateRoom);
+router.delete("/:id", deleteRoom);
+router.post("/:id/invite", generateInvite);
+router.post("/join/:token", joinRoom);
+router.get("/:id/members", getMembers);
+router.post("/:id/members", addMember);
+router.delete("/:id/members/:userId", removeMember);
 
 module.exports = router;
